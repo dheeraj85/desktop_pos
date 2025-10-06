@@ -1,6 +1,11 @@
 {
   "companyName": "Sagar Gaire",
-  "webhookUrl": "http://localhost/harivind/desktop-api",
+  "webhookUrl1": "https://sagargaire.com/demo/desktop-api",
+  "PushUrl1": " http://localhost/local_pos_online/users/receive", 
+
+ "webhookUrl": "http://localhost/harivind/desktop-api",
+  "PushUrl": " http://localhost/harivind/desktop-api/receive", 
+
   "authKey": "51dsfsdfdbsd",
   "mobile": "7000147928",
   "address": "2, Durga Mandir Rd, 7 No Stop,Near State Bank, No 6 Locality, Shivaji Nagar, Bhopal, Madhya Pradesh 462016",
