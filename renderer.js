@@ -1,0 +1,850 @@
+const fs = require("fs");
+const path = require("path");
+const saleFile = path.join(__dirname, "saleData.json");
+const holdFile = path.join(__dirname, "holdData.json");
+const configFile = path.join(__dirname, "config.json");
+
+
+let products = [];
+let categories = [];
+let companyDetail = [];
+let paymentModes = [];
+let cart = [];
+
+
+const ItemPage = {
+  configFile: path.join(__dirname,"config.json"),
+  productsFile: path.join(__dirname,"products.json"),
+  categoriesFile: path.join(__dirname,"categories.json"),
+  companyFile: path.join(__dirname,"company.json"),
+  paymentFile: path.join(__dirname,"paymentModes.json"),
+
+  config: fs.existsSync(path.join(__dirname,"config.json")) ? JSON.parse(fs.readFileSync(path.join(__dirname,"config.json"),"utf-8")) : {},
+  products: [],
+  categories: [],
+  company: [],
+  paymentModes: [],
+
+  // Load local data
+  loadData: async function(){
+    if(fs.existsSync(this.productsFile)) this.products = JSON.parse(fs.readFileSync(this.productsFile,"utf-8"));
+    if(fs.existsSync(this.categoriesFile)) this.categories = JSON.parse(fs.readFileSync(this.categoriesFile,"utf-8"));
+if (fs.existsSync(this.companyFile)) {
+  let raw = fs.readFileSync(this.companyFile, "utf-8").trim();
+  if (raw) {
+    try {
+      this.company = JSON.parse(raw);
+    } catch (e) {
+      console.error("❌ company.json corrupted:", e);
+      this.company = [];
+    }
+  } else {
+    this.company = []; 
+  }
+}
+    if(fs.existsSync(this.paymentFile)) this.paymentModes = JSON.parse(fs.readFileSync(this.paymentFile,"utf-8"));
+
+    this.renderProducts(this.products);
+    this.renderCategories(this.categories);
+    this.renderCompany(this.company);
+    this.renderPayments(this.paymentModes);
+  },
+
+  renderProducts: function(list){
+    const container = document.getElementById("item-product-list");
+    container.innerHTML = "";
+    list.forEach(p=>{
+      container.innerHTML += `<div class="col-md-3">
+        <div class="card p-2 text-center">
+          <h6>${p.name}</h6>
+          <p>₹ ${p.price}</p>
+          <p>Category: ${p.category}</p>
+        </div>
+      </div>`;
+    });
+  },
+
+  renderCategories: function(list){
+    const container = document.getElementById("item-category-list");
+    container.innerHTML = "";
+    list.forEach(c=>{
+      container.innerHTML += `<div class="col-md-3">
+        <div class="card p-2 text-center">
+          <h6>${c.name}</h6>
+        </div>
+      </div>`;
+    });
+  },
+
+  renderCompany: function(list){
+  const container = document.getElementById("company-detail");
+  container.innerHTML = "";
+
+  list.forEach(c=>{
+    container.innerHTML += `
+      <div class="col-md-6">
+        <div class="card p-3 mb-3 shadow-sm">
+          <h5 class="fw-bold">${c.company_name}</h5>
+          <p><b>GSTIN:</b> ${c.company_gstin || "-"}</p>
+          <p><b>FSSAI No:</b> ${c.fssai_no || "-"}</p>
+          <p><b>Address:</b> ${c.company_address || "-"}</p>
+          <p><b>Contact:</b> ${c.contact_number || "-"}</p>
+          <p><b>Pincode:</b> ${c.pincode || "-"}</p>
+          <p><b>Email:</b> ${c.official_email_id || "-"}</p>
+        </div>
+      </div>`;
+  });
+},
+
+
+  renderPayments: function(list){
+    const container = document.getElementById("item-payment-list");
+    container.innerHTML = "";
+    list.forEach(p=>{
+      container.innerHTML += `<div class="col-md-3">
+        <div class="card p-2 text-center">
+          <h6>${p.name}</h6>
+        </div>
+      </div>`;
+    });
+  },
+
+  filterProducts: function(){
+    const q = document.getElementById("item-search-products").value.toLowerCase();
+    const filtered = this.products.filter(p=>p.name.toLowerCase().includes(q));
+    this.renderProducts(filtered);
+  },
+
+  filterCategories: function(){
+    const q = document.getElementById("item-search-categories").value.toLowerCase();
+    const filtered = this.categories.filter(c=>c.name.toLowerCase().includes(q));
+    this.renderCategories(filtered);
+  },
+
+  filterPayments: function(){
+    const q = document.getElementById("item-search-payments").value.toLowerCase();
+    const filtered = this.paymentModes.filter(p=>p.name.toLowerCase().includes(q));
+    this.renderPayments(filtered);
+  },
+
+syncProducts: async function(){
+    if(!this.config.webhookUrl){ alert("Data server URL not configured!"); return; }
+
+    try{
+        const res = await fetch(`${this.config.webhookUrl}/products`); // Yii2 endpoint
+        if(res.ok){
+            const data = await res.json();
+            // Assign fallback unique IDs if needed
+            data.forEach((d,i)=>{
+                if(!d.id) d.id = Date.now() + i;
+            });
+            fs.writeFileSync(this.productsFile, JSON.stringify(data,null,2));
+            this.products = data;
+            this.renderProducts(this.products);
+            alert("✅ Products synced from server!");
+        } else {
+            alert("❌ Failed to fetch products from server");
+        }
+    } catch(e){
+        console.error(e);
+        alert("❌ Product sync error");
+    }
+},
+
+
+  syncCategories: async function(){
+    if(!this.config.webhookUrl){ alert("Data server URL not configured!"); return; }
+    try{
+       const res = await fetch(`${this.config.webhookUrl}/categories`); // Yii2 endpoint
+      if(res.ok){
+        const data = await res.json();
+        data.forEach((d,i)=>{ if(!d.id) d.id = Date.now() + i; });
+        fs.writeFileSync(this.categoriesFile, JSON.stringify(data,null,2));
+        this.categories = data;
+        this.renderCategories(this.categories);
+        alert("✅ Categories synced!");
+      }
+    } catch(e){ console.error(e); alert("❌ Category sync failed"); }
+  },
+
+syncCompanyDetails: async function(){
+  if(!this.config.webhookUrl || !this.config.authKey){ 
+    alert("Data server URL or AuthKey not configured!"); 
+    return; 
+  }
+
+  try {
+    const res = await fetch(`${this.config.webhookUrl}/companydetail`, { // Yii2 endpoint
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${this.config.authKey}` 
+      }
+    });
+
+    if(res.ok){
+      let data = await res.json();
+
+      if(!Array.isArray(data)) data = [data];
+
+      data.forEach((d,i)=>{ if(!d.id) d.id = Date.now() + i; });
+
+      fs.writeFileSync(this.companyFile, JSON.stringify(data,null,2));
+
+      this.company = data;
+
+      this.renderCompany(this.company);
+
+      alert("✅ Company Detail Synced!");
+    } else {
+      alert("❌ Failed to fetch company details from server");
+    }
+  } catch(e){ 
+    console.error(e); 
+    alert("❌ Company sync failed"); 
+  }
+},
+
+
+
+
+  syncPaymentModes: async function(){
+    if(!this.config.webhookUrl){ alert("Data server URL not configured!"); return; }
+    try{
+       const res = await fetch(`${this.config.webhookUrl}/payment-modes`); // Yii2 endpoint
+      if(res.ok){
+        const data = await res.json();
+        data.forEach((d,i)=>{ if(!d.id) d.id = Date.now() + i; });
+        fs.writeFileSync(this.paymentFile, JSON.stringify(data,null,2));
+        this.paymentModes = data;
+        this.renderPayments(this.paymentModes);
+        alert("✅ Payment modes synced!");
+      }
+    } catch(e){ console.error(e); alert("❌ Payment mode sync failed"); }
+  }
+};
+
+// ------------------- Page Load -------------------
+window.onload = () => ItemPage.loadData();
+
+
+// -------------------- Open Settings Modal --------------------
+window.openSettings = function() {
+  // Read config.json
+  let config = {};
+  if(fs.existsSync(configFile)){
+    try {
+      config = JSON.parse(fs.readFileSync(configFile, "utf-8"));
+    } catch(e){ console.error("Invalid config.json"); }
+  }
+
+  // Build HTML modal
+  const modalHtml = `
+  <div class="modal fade" id="settingsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">Company Settings</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="configForm">
+            <div class="mb-3">
+              <label class="form-label">Company Name</label>
+              <input type="text" class="form-control" name="companyName" value="${config.companyName || ''}">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Webhook URL</label>
+              <input type="text" class="form-control" name="webhookUrl" value="${config.webhookUrl || ''}">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Auth Key</label>
+              <input type="text" class="form-control" name="authKey" value="${config.authKey || ''}">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Mobile</label>
+              <input type="text" class="form-control" name="mobile" value="${config.mobile || ''}">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Address</label>
+              <input type="text" class="form-control" name="address" value="${config.address || ''}">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-control" name="email" value="${config.email || ''}">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-success" onclick="saveSettings()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  const modal = new bootstrap.Modal(document.getElementById("settingsModal"));
+  modal.show();
+
+  // Remove modal from DOM after hidden
+  document.getElementById("settingsModal").addEventListener('hidden.bs.modal', () => {
+    document.getElementById("settingsModal").remove();
+  });
+}
+
+// -------------------- Save Settings --------------------
+
+window.saveSettings = function() {
+  const form = document.getElementById("configForm");
+  const data = Object.fromEntries(new FormData(form).entries());
+
+  try {
+    fs.writeFileSync(configFile, JSON.stringify(data, null, 2));
+    alert("✅ Settings saved successfully!");
+    bootstrap.Modal.getInstance(document.getElementById("settingsModal")).hide();
+  } catch(e) {
+    alert("❌ Error saving settings: " + e.message);
+  }
+}
+
+// Hold current cart
+function holdOrder() {
+  if(cart.length === 0){
+    alert("Cart is empty!");
+    return;
+  }
+
+  
+  function logout() {
+    ipcRenderer.invoke("logout");
+  }
+
+
+  let holdData = {
+    id: Date.now(),
+    date: new Date().toLocaleString(),
+    items: cart,
+    total: document.getElementById("total").innerText,
+    paymentMode: "hold"
+  };
+
+  // Read existing hold orders
+  let holds = [];
+  if(fs.existsSync(holdFile)){
+    try{
+      holds = JSON.parse(fs.readFileSync(holdFile, "utf-8"));
+    }catch(e){ holds = [] }
+  }
+
+  holds.push(holdData);
+  fs.writeFileSync(holdFile, JSON.stringify(holds, null, 2));
+
+  cart = []; // clear cart
+  renderCart();
+
+  alert("Order held successfully!");
+}
+
+// Load hold orders to modal or table
+function loadHoldOrders() {
+  if(!fs.existsSync(holdFile)) return [];
+
+  try{
+    return JSON.parse(fs.readFileSync(holdFile, "utf-8"));
+  }catch(e){ return [] }
+}
+
+// Resume hold order
+// Resume hold order
+function resumeHoldOrder(id) {
+  let holds = loadHoldOrders();
+  const index = holds.findIndex(h => h.id === id);
+  if(index === -1) return;
+
+  cart = holds[index].items;
+  renderCart();
+
+  // Remove from hold list
+  holds.splice(index, 1);
+  fs.writeFileSync(holdFile, JSON.stringify(holds, null, 2));
+
+  // Show POS page
+  showPage("pos-page");
+
+  //alert("Order resumed!");
+}
+
+
+// Delete hold order
+function deleteHoldOrder(id){
+  let holds = loadHoldOrders();
+  holds = holds.filter(h => h.id !== id);
+  fs.writeFileSync(holdFile, JSON.stringify(holds, null, 2));
+  alert("Hold order deleted!");
+}
+
+// Load data
+async function loadData() {
+  products = await (await fetch("products.json")).json();
+  categories = await (await fetch("categories.json")).json();
+  paymentModes = await (await fetch("paymentModes.json")).json();
+
+  renderCategories();
+  // sirf first 20 products load karenge
+  loadProducts(products.slice(0, 20));
+  renderPaymentModes();
+}
+
+// Render categories
+function renderCategories() {
+  const select = document.getElementById("category-filter");
+  categories.forEach(c => {
+    select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+  });
+}
+
+// Render payment modes
+function renderPaymentModes() {
+  const select = document.getElementById("payment-mode");
+  select.innerHTML = "";
+  paymentModes.forEach(pm => {
+    select.innerHTML += `<option value="${pm.id}">${pm.name}</option>`;
+  });
+}
+
+// Products rendering
+// function loadProducts(list) {
+//   let container = document.getElementById("product-list");
+//   container.innerHTML = "";
+
+//   list.forEach(p => {
+//     // Random color for first letter
+//     const colors = ["#e53935","#8e24aa","#3949ab","#43a047","#fdd835","#fb8c00"];
+//     const firstLetterColor = colors[p.id % colors.length];
+
+//     // Split name into first letter + rest
+//     const firstLetter = p.name.charAt(0);
+//     const restName = p.name.slice(1);
+
+//     container.innerHTML += `
+//       <div class="col-md-6 col-lg-3 mb-3">
+//         <div class="card product-card h-100 d-flex flex-column align-items-center justify-content-center" onclick="addToCart(${p.id})" style="cursor:pointer; padding:15px;">
+          
+//           <!-- First letter as badge -->
+//           <div style="width:50px; height:50px; border-radius:50%; background-color:${firstLetterColor}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.5rem; font-weight:bold; margin-bottom:10px;">
+//             ${firstLetter}
+//           </div>
+
+//           <!-- Rest of name -->
+//           <h6 class="text-center mb-2" style="font-weight:600;font-size:12px">${restName}</h6>
+
+//           <!-- Price -->
+//           <p class="fw-bold text-success mb-0">₹ ${p.price}</p>
+//         </div>
+//       </div>
+//     `;
+//   });
+// }
+
+
+// Filtering
+// Filtering
+// function filterProducts() {
+//   let search = document.getElementById("search-bar").value.toLowerCase();
+//   let category = document.getElementById("category-filter").value;
+//   let itemcode = document.getElementById("search-itemcode").value.toLowerCase(); // item code input
+//   let filtered = products.filter(p => {
+//     let matchCategory = (category === "all" || p.category_id === category);
+//     let matchSearch = p.name.toLowerCase().includes(search);
+//     let matchCode = p.item_code.toLowerCase().includes(itemcode); // item code match
+//     return matchCategory && matchSearch && matchCode;
+//   });
+//   loadProducts(filtered);
+// }
+
+
+
+// Products rendering
+function loadProducts(list) {
+  let container = document.getElementById("product-list");
+  container.innerHTML = ""; // clear old
+
+  let html = "";
+
+  list.forEach(p => {
+    const colors = ["#e53935","#8e24aa","#3949ab","#43a047","#fdd835","#fb8c00"];
+    const firstLetterColor = colors[p.id % colors.length]; 
+    const firstLetter = p.name.charAt(0);
+    const restName = p.name.slice(1);
+
+    html += `
+      <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card product-card h-100 d-flex flex-column align-items-center justify-content-center" onclick="addToCart(${p.id})" style="cursor:pointer; padding:15px;">
+          <div style="width:50px; height:50px; border-radius:50%; background-color:${firstLetterColor}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.5rem; font-weight:bold; margin-bottom:10px;">
+            ${firstLetter}
+          </div>
+          <h6 class="text-center mb-2" style="font-weight:600;font-size:12px">${restName}</h6>
+          <p class="fw-bold text-success mb-0">₹ ${p.price}</p>
+        </div>
+      </div>
+    `;
+  });
+
+  // ✅ Sirf ek hi baar DOM update
+  container.innerHTML = html;
+}
+
+// Filtering
+function filterProducts() {
+  let search = document.getElementById("search-bar").value.toLowerCase().trim();
+  let category = document.getElementById("category-filter").value;
+  let itemcode = document.getElementById("search-itemcode").value.toLowerCase().trim();
+
+  if (search === "" && itemcode === "" && (category === "all" || category === "")) {
+    document.getElementById("product-list").innerHTML = "";
+    return;
+  }
+
+  let filtered = products.filter(p => {
+    let matchCategory = (category === "all" || category === "" || String(p.category_id) === String(category));
+    let matchSearch = search === "" || p.name.toLowerCase().includes(search);
+    let matchCode = itemcode === "" || p.item_code.toLowerCase().includes(itemcode);
+    return matchCategory && matchSearch && matchCode;
+  });
+
+  loadProducts(filtered);
+}
+
+
+function handleSearchKey(e) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+
+    let search = document.getElementById("search-bar").value.toLowerCase().trim();
+    let itemInput = document.getElementById("search-itemcode");
+    let itemcode = itemInput.value.toLowerCase().trim();
+
+    if (itemcode !== "") {
+      let product = products.find(p => p.item_code.toLowerCase() === itemcode);
+      if (product) {
+        addToCart(product.id);
+      } else {
+        alert("No product found with item code: " + itemcode);
+      }
+
+      itemInput.value = "";
+      itemInput.focus();
+      return; 
+    } 
+    
+    if (search !== "") {
+      let product = products.find(p => p.name.toLowerCase().includes(search));
+      if (product) {
+        addToCart(product.id);
+      } else {
+        alert("No product found with name: " + search);
+      }
+    }
+    itemInput.focus();
+  }
+}
+
+
+// Add to cart
+function addToCart(id) {
+  let product = products.find(p => String(p.id) === String(id));
+  if (!product) {
+    alert("Product not found for id: " + id);
+    return;
+  }
+
+  let existing = cart.find(c => String(c.id) === String(id));
+  if (existing) {
+    existing.qty++;
+  } else {
+    cart.push({
+      id: product.id,
+      name: product.name,
+      price: parseFloat(product.price),
+      qty: 1,
+      rate_change_permission: product.rate_change_permission 
+    });
+  }
+  renderCart();
+}
+
+
+function renderCart() {
+  let tbody = document.getElementById("cart-items");
+  tbody.innerHTML = "";
+  let totalQty = 0, totalAmount = 0;
+
+  cart.forEach((c, i) => {
+    let subtotal = (c.qty || 0) * (c.price || 0);
+    totalQty += (c.qty || 0);
+    totalAmount += subtotal;
+
+    tbody.innerHTML += `
+      <tr>
+        <td>${c.name}</td>
+        <td>
+          <input type="number" min="0" step="any" value="${c.qty || 0}" 
+            onchange="updateQty(${i},this.value)" 
+            class="form-control form-control-sm" style="width:70px">
+        </td>
+        <td>
+          ${
+            (c.rate_change_permission == 1)
+              ? `<input type="text" value="${c.price}" 
+                   onchange="updatePrice(${i}, this.value)" 
+                   class="form-control form-control-sm" style="width:80px">`
+              : `₹${c.price}`
+          }
+        </td>
+        <td>₹${subtotal.toFixed(2)}</td>
+        <td>
+          <button class="btn btn-sm btn-danger" onclick="removeItem(${i})">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>
+      </tr>`;
+  });
+
+  if (cart.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No items added yet</td></tr>`;
+  }
+
+  let finalQty = Math.round(totalQty);
+
+  let finalAmount = Math.round(totalAmount);
+
+  document.getElementById("qty").innerText = finalQty;
+  document.getElementById("total").innerText = finalAmount;
+}
+
+// ========================
+
+
+// Price Update Logic
+// ========================
+function updatePrice(index, value) {
+  let input = value.toString().trim();
+
+  if (cart[index].rate_change_permission == 1) {
+    if (input.startsWith(".")) {
+      let newPrice = parseFloat(input.substring(1)) || 0;
+      cart[index].price = newPrice;
+      if (!cart[index].qty || cart[index].qty <= 0) {
+        cart[index].qty = 1;
+      }
+    } else {
+      let totalAmount = parseFloat(input) || 0;
+      let basePrice = parseFloat(cart[index].mrp) || parseFloat(cart[index].price);
+      if (basePrice > 0) {
+        let newQty = totalAmount / basePrice;
+        cart[index].qty = parseFloat(newQty.toFixed(3)); 
+        cart[index].price = basePrice;
+      }
+    }
+  } else {
+    cart[index].price = parseFloat(value) || 0;
+    if (!cart[index].qty || cart[index].qty <= 0) {
+      cart[index].qty = 1;
+    }
+  }
+
+  renderCart();
+}
+
+// ========================
+// Qty Update Logic
+// ========================
+function updateQty(index, value) {
+  cart[index].qty = parseFloat(parseFloat(value).toFixed(3)) || 0; // 👈 qty bhi round off
+  renderCart();
+}
+// ========================
+
+// Remove item
+function removeItem(index) {
+  cart.splice(index, 1);
+  renderCart();
+}
+
+function openPaymentModal() {
+  if (cart.length === 0) {
+    alert("Cart is empty!");
+    return;
+  }
+  let modal = new bootstrap.Modal(document.getElementById("paymentModal"));
+  modal.show();
+}
+
+// Confirm payment
+function confirmPayment() {
+  const mode = document.getElementById("payment-mode").value;
+  const total = document.getElementById("total").innerText;
+
+  // Read existing sales
+  let sales = [];
+  if (fs.existsSync(saleFile)) {
+    const data = fs.readFileSync(saleFile, "utf8");
+    if (data) {
+      try { sales = JSON.parse(data); } catch(e) { sales = []; }
+    }
+  }
+
+  // Determine last invoice number safely
+  let lastInvoiceNo = 1000; // default start
+  if (sales.length > 0) {
+    // Filter only those sales which have 'id' starting with 'IN-'
+    const invoiceNumbers = sales
+      .map(s => s.id)
+      .filter(id => typeof id === "string" && id.startsWith("IN-"))
+      .map(id => parseInt(id.split('-')[1]));
+    
+    if (invoiceNumbers.length > 0) {
+      lastInvoiceNo = Math.max(...invoiceNumbers);
+    }
+  }
+
+  const invoiceNo = `IN-${lastInvoiceNo + 1}`;
+
+  let saleData = {
+    id: invoiceNo,        // Invoice number
+    date: new Date().toLocaleString(),
+    items: cart,
+    total: total,
+    paymentMode: mode
+  };
+
+  // Save to JSON
+  sales.push(saleData);
+  fs.writeFileSync(saleFile, JSON.stringify(sales, null, 2));
+
+  // Print invoice
+  printInvoice(saleData);
+
+  // Reset cart
+  cart = [];
+  renderCart();
+
+  // Close modal
+  bootstrap.Modal.getInstance(document.getElementById("paymentModal")).hide();
+}
+
+
+// Print invoice
+function printInvoice(saleData) {
+  const { ipcRenderer } = require("electron");
+ // alert('Printing Invoice...');
+ ipcRenderer.invoke("print-invoice", saleData);
+}
+
+
+loadData();
+
+// ------------------------ Upload Sales Start -------------------
+
+async function pushData(auto = false) {
+  const statusEl = document.getElementById("status");
+  statusEl.innerText = auto ? "Auto pushing data..." : "Pushing data...";
+
+  try {
+    const configRaw = fs.readFileSync(configFile, "utf-8");
+    const config = JSON.parse(configRaw);
+
+    if (!config.PushUrl) {
+      throw new Error("PushUrl not found in config.json");
+    }
+
+    if (!fs.existsSync(saleFile)) return;
+
+    const rawData = fs.readFileSync(saleFile, "utf-8");
+    let saleData = JSON.parse(rawData);
+
+    if (!Array.isArray(saleData)) {
+      saleData = [saleData];
+    }
+
+    const transformedData = saleData.map(sale => ({
+      sale: {
+        id: sale.id,
+        invoice_number: sale.id,
+        token_no: "",
+        year: new Date(sale.date).getFullYear(),
+        customer_name: "Walk-in Customer",
+        date: sale.date
+      },
+      sale_items: sale.items.map(item => ({
+        item_id: item.id,
+        variant_value_id: null,
+        item_brand: "",
+        description: item.name,
+        sub_title: "",
+        item_description: item.name,
+        qty: item.qty,
+        unit: "pcs",
+        unit_price: parseFloat(item.price),
+        unit_tax: 0,
+        discount_percent: 0,
+        net_amount: parseFloat(item.price) * item.qty,
+        tax_amt: 0,
+        amt_without_tax: parseFloat(item.price) * item.qty,
+        is_active: 1,
+        process_order_status: "pending",
+        process_reject_reason: "",
+        created_by: 1,
+        updated_by: 1,
+        updated_at: new Date().toISOString().slice(0, 19).replace("T", " ")
+      }))
+    }));
+
+    const pushRes = await fetch(config.PushUrl, {  // Yii2 endpoint
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${config.authKey}`   
+      },
+      body: JSON.stringify(transformedData)
+    });
+
+    const responseJson = await pushRes.json();
+
+    if (pushRes.ok && responseJson.status === "success") {
+      statusEl.innerText = (auto ? "✅ Auto Push Success!" : "✅ Sale data successfully pushed!") 
+        + " Last ID: " + responseJson.last_sale_id;
+      statusEl.classList.remove("text-danger");
+      statusEl.classList.add("text-success");
+
+    } else {
+      statusEl.innerText = (auto ? "❌ Auto Push Failed! " : "❌ Push Failed! ") 
+        + (responseJson.message || "Server rejected data");
+      statusEl.classList.remove("text-success");
+      statusEl.classList.add("text-danger");
+    }
+
+    setTimeout(() => {
+      statusEl.innerText = "";
+      statusEl.classList.remove("text-success", "text-danger");
+    }, 3000);
+
+  } catch (err) {
+    console.error("Push Error:", err);
+    statusEl.innerText = "⚠️ Push Error: " + err.message;
+    statusEl.classList.remove("text-success");
+    statusEl.classList.add("text-danger");
+  }
+}
+
+document.getElementById("pushDataBtn").addEventListener("click", () => pushData(false));
+
+setInterval(() => pushData(true), 10 * 60 * 1000);
+
+// setInterval(() => pushData(true), 10 * 1000);
+
+
+// ------------------------  Upload Sales End-------------------
+
+

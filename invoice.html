@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>KOT + Invoice (Separate Pages)</title>
+  <style>
+    @media print {
+      @page {
+        size: 3in auto;
+        margin: 0;
+      }
+      body { margin: 0; padding: 0; }
+      .page-break {
+        page-break-after: always;
+      }
+    }
+
+    body {
+      font-family: monospace;
+      font-size: 14px;
+      width: 3in;
+      margin: 0 auto;
+      padding: 0;
+    }
+
+    .center { text-align: center; font-weight: bold; }
+    .right { text-align: right; }
+    .left { text-align: left; }
+    .small { font-size: 12px; }
+    hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 2px 3px; }
+    th { border-bottom: 1px dashed #000; font-size: 13px; }
+
+    td.item { text-align: left; width: 45%; }
+    td.qty { text-align: right; width: 15%; }
+    td.rate { text-align: right; width: 20%; }
+    td.amt { text-align: right; width: 20%; }
+
+    .kot-section, .bill-section {
+      margin-bottom: 10px;
+      page-break-inside: avoid;
+    }
+  </style>
+</head>
+<body>
+  <div id="invoice"></div>
+
+  <script>
+    const fs = require("fs");
+    const path = require("path");
+
+    // ✅ Read company.json safely
+    const companyPath = path.join(__dirname, "company.json");
+    let company = {};
+    try {
+      const data = fs.readFileSync(companyPath, "utf-8");
+      const json = JSON.parse(data);
+      company = Array.isArray(json) ? json[0] : json;
+    } catch (err) {
+      console.error("❌ Error reading company.json:", err);
+    }
+
+    window.addEventListener("message", (event) => {
+      const saleData = event.data;
+      if (!saleData || !saleData.items) return;
+
+      const date = new Date().toLocaleString();
+      const tokenNo = saleData.id ? saleData.id.replace(/\D/g, "") : Math.floor(Math.random() * 900 + 100);
+      const tableNo = saleData.table || "10";
+
+      // 🧾 KOT SECTION
+      let kotHTML = `
+      <div class="kot-section page-break">
+        <div class="center">KOT - ${company.company_name || "Restaurant"}</div>
+        <div class="small">Date: ${date}</div>
+        <div class="small">Table: ${tableNo} | Token: #${tokenNo}</div>
+        <hr>
+        <table>
+          <thead>
+            <tr>
+              <th class="left">Item</th>
+              <th class="qty">Qty</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      saleData.items.forEach(item => {
+        kotHTML += `
+          <tr>
+            <td class="item">${item.name}</td>
+            <td class="qty">${item.qty}</td>
+          </tr>`;
+      });
+
+      kotHTML += `
+          </tbody>
+        </table>
+        <hr>
+        <div class="center small">-- KOT Print --</div>
+      </div>
+      `;
+
+      // 💰 BILL SECTION
+      let billHTML = `
+      <div class="bill-section">
+        <table style="width:100%; text-align:center;">
+          <tr>
+            <td>
+              <b style="font-size:16px;">${company.company_name || "Company Name"}</b><br>
+              <label style="font-size:11px;">
+                ${company.company_address || ""}<br>
+                &#9742; ${company.contact_number || ""}<br>
+                GSTIN: ${company.company_gstin || "N/A"}
+              </label>
+            </td>
+          </tr>
+        </table>
+
+        <hr>
+        <div class="small">
+          <b>Date:</b> ${saleData.date || date}<br>
+          <b>Invoice:</b> ${saleData.id || "INV" + tokenNo}<br>
+          <b>Table:</b> ${tableNo} | <b>Token:</b> #${tokenNo}
+        </div>
+        <hr>
+
+        <table>
+          <thead>
+            <tr>
+              <th class="left">Item</th>
+              <th class="qty">Qty</th>
+              <th class="rate">Rate</th>
+              <th class="amt">Amt</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      saleData.items.forEach(item => {
+        const qty = parseFloat(item.qty).toFixed(2);
+        const rate = parseFloat(item.price).toFixed(2);
+        const amt = (item.qty * item.price).toFixed(2);
+
+        billHTML += `
+          <tr>
+            <td class="item">${item.name}</td>
+            <td class="qty">${qty}</td>
+            <td class="rate">${rate}</td>
+            <td class="amt">${amt}</td>
+          </tr>
+        `;
+      });
+
+      billHTML += `
+          </tbody>
+        </table>
+
+        <hr>
+        <div class="right"><b>Total: ₹${parseFloat(saleData.total).toFixed(2)}</b></div>
+        <div class="center small">Payment Mode: ${saleData.paymentMode || "Cash"}</div>
+        <hr>
+        <div class="center">Thank You! Visit Again 🙏</div>
+      </div>
+      `;
+
+      // ✅ Combine both sections
+      document.getElementById("invoice").innerHTML = kotHTML + billHTML;
+
+      setTimeout(() => window.print(), 500);
+    });
+  </script>
+</body>
+</html>
+
+
+

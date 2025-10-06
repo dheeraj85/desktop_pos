@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ultimate Inventory with POS</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body { font-family: "Poppins", sans-serif; background-color: #f8f9fa; }
+    .navbar { background: #0d6efd; }
+    .navbar .nav-link { color: #fff !important; font-weight: 500; }
+    .invoice-box { background: #fff; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 15px; height: 100%; }
+    .product-card { border-radius: 10px; overflow: hidden; cursor: pointer; transition: 0.2s; }
+    .product-card:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+    .product-img { height: 120px; object-fit: cover; width: 100%; }
+    .product-info { padding: 10px; text-align: center; }
+    .bottom-bar { background: #fff; border-top: 2px solid #eee; padding: 15px; border-radius: 10px; box-shadow: 0 -2px 8px rgba(0,0,0,0.1); }
+    .btn-custom { min-width: 120px; font-weight: 600; }
+    .product-card {
+  border-radius: 12px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.product-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+}
+
+  </style>
+</head>
+<body>
+
+<!-- Top Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="#">Ultimate Inventory with POS</a>
+    <div class="collapse navbar-collapse">
+      <ul class="navbar-nav ms-auto">
+<button id="pushDataBtn" class="btn btn-primary">
+  <i class="bi bi-cloud-upload"></i> Upload Sales
+</button>
+        <li class="nav-item"><a href="#" class="nav-link" onclick="showPage('sales-page', event)"><i class="bi bi-card-list"></i> Sales List</a></li>
+        <li class="nav-item"><a href="#" class="nav-link" onclick="showPage('pos-page', event)"><i class="bi bi-plus-square"></i> New Invoice</a></li>
+        <li class="nav-item"><a href="#" class="nav-link" onclick="showPage('item-page', event)"><i class="bi bi-box-seam"></i> Items List</a></li>
+        <li class="nav-item"><a href="#" class="nav-link" onclick="showPage('hold-page', event)"><i class="bi bi-hourglass-split"></i> Hold List</a></li>
+        <li class="nav-item"><a href="#" class="nav-link" ><i class="bi bi-speedometer2" ></i> Dashboard</a></li>
+       <li class="nav-item dropdown">
+  <a href="#" class="nav-link dropdown-toggle" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    <i class="bi bi-person-circle"></i> Admin
+  </a>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+      <li><a class="dropdown-item" href="#" onclick="openSettings()"><i class="bi bi-gear"></i> Setting</a></li>
+      <li><a class="dropdown-item" href="#" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+  </ul>
+</li>
+
+      </ul>
+    </div>
+  </div>
+</nav>
+<div id="status" class="p-2 text-success"></div>
+
+<!-- Item List Page -->
+<div id="item-page" class="container mt-3" style="display:none;">
+  <!-- Products Section -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h4>Products</h4>
+    <button class="btn btn-sm btn-primary" onclick="ItemPage.syncProducts()">Sync Products</button>
+  </div>
+  <input type="text" id="item-search-products" class="form-control mb-2" placeholder="Search Products..." onkeyup="ItemPage.filterProducts()">
+  <div class="row g-3" id="item-product-list"></div>
+
+  <hr>
+
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h4>Categories</h4>
+    <button class="btn btn-sm btn-primary" onclick="ItemPage.syncCategories()">Sync Categories</button>
+  </div>
+  <input type="text" id="item-search-categories" class="form-control mb-2" placeholder="Search Categories..." onkeyup="ItemPage.filterCategories()">
+  <div class="row g-3" id="item-category-list"></div>
+
+  <hr>
+
+  <!-- Payment Modes Section -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h4>Payment Modes</h4>
+    <button class="btn btn-sm btn-primary" onclick="ItemPage.syncPaymentModes()">Sync Payment Modes</button>
+  </div>
+  <input type="text" id="item-search-payments" class="form-control mb-2" placeholder="Search Payment Modes..." onkeyup="ItemPage.filterPayments()">
+  <div class="row g-3" id="item-payment-list"></div>
+
+
+  <hr>
+
+ <div class="d-flex justify-content-between align-items-center mb-2">
+    <h4>Company Details :  <div id="company-detail"></div></h4>
+    <button class="btn btn-sm btn-primary" onclick="ItemPage.syncCompanyDetails()">Sync Company Details</button>
+  </div>
+ 
+
+  <hr>
+</div>
+
+</div>
+
+  
+
+
+<!-- Main POS Layout -->
+<div class="container-fluid mt-3" id="pos-page">
+  <div class="row">
+    <!-- Left Invoice Section -->
+      <div class="col-lg-7">
+      <div class="invoice-box">
+        <div class="row">
+         <div class="col-lg-4">
+        <div class="d-flex gap-2 mb-3">
+          <select class="form-select" id="category-filter" onchange="filterProducts()">
+            <option value="all">All Categories</option>
+          </select>
+        </div>
+        </div>
+        
+         <div class="col-lg-4">
+        <input type="text" id="search-bar" onkeydown="handleSearchKey(event)" class="form-control mb-3" placeholder="Search Item..." onkeyup="filterProducts()">
+</div>
+ <div class="col-lg-4">
+   <input type="text" id="search-itemcode" onkeydown="handleSearchKey(event)" class="form-control mb-3" placeholder="Search Item Code..." onkeyup="filterProducts()">
+ </div>
+ </div>
+        <!-- Product Grid -->
+        <div class="row g-3" id="product-list">
+          <!-- Products will be added here dynamically -->
+        </div>
+        
+      </div>
+    </div>
+   
+
+    <!-- Right Products Section -->
+    <div class="col-lg-5 mb-3">
+      <div class="invoice-box">
+        <h5 class="fw-bold"><i class="bi bi-receipt"></i> Sales Invoice</h5>
+        
+        <!-- Invoice Table -->
+        <div class="table-responsive">
+          <table class="table table-bordered align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Item</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>Subtotal</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="cart-items">
+              <tr>
+                <td colspan="5" class="text-center text-muted">No items added yet</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Bottom invoice summary -->
+        <div class="bottom-bar d-flex justify-content-between align-items-center flex-wrap">
+          <div>
+            <span class="fw-bold me-3">Quantity: <span id="qty">0</span></span>
+            <span class="fw-bold me-3">Total: ₹<span id="total">0.00</span></span>
+            <span class="fw-bold">Discount: ₹<span id="discount">0.00</span></span>
+          </div>
+          <div>
+            <button class="btn btn-danger btn-custom" onclick="holdOrder()"><i class="bi bi-hand-thumbs-up"></i> Hold</button>
+            <button class="btn btn-dark btn-custom" onclick="openPaymentModal()"><i class="bi bi-wallet2"></i> Save & Print</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="sales-page" class="container mt-3" style="display:none;">
+  <h3 class="mb-3">Sales History</h3>
+
+  <!-- Filters -->
+  <div class="row mb-3 g-2">
+    <div class="col-md-4">
+      <input type="text" id="search-sales" class="form-control" placeholder="Search by item or payment mode" onkeyup="filterSales()">
+    </div>
+    <div class="col-md-3">
+      <input type="date" id="filter-date" class="form-control" onchange="filterSales()">
+    </div>
+    <div class="col-md-3">
+      <select id="filter-payment" class="form-select" onchange="filterSales()">
+        <option value="all">All Payment Modes</option>
+        <!-- Options dynamically from paymentModes -->
+      </select>
+    </div>
+  </div>
+
+  <!-- Sales Table -->
+  <div class="table-responsive" style="font-size: 12px;">
+    <table class="table table-bordered ">
+      <thead class="table-dark">
+        <tr>
+          <th>#</th>
+          <th>Invoice No</th>
+          <th>Date</th>
+          <th>Items</th>
+          <th>Payment Mode</th>
+          <th>Total (₹)</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="sales-body">
+        <tr><td colspan="6" class="text-center text-muted">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div id="hold-page" class="container mt-3" style="display:none;">
+  <h3>Hold Orders</h3>
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped">
+      <thead class="table-dark">
+        <tr>
+          <th>#</th>
+          <th>Date</th>
+          <th>Items</th>
+          <th>Total (₹)</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="hold-body">
+        <tr><td colspan="5" class="text-center text-muted">No hold orders</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="bi bi-wallet2"></i> Select Payment Mode</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <select class="form-select" id="payment-mode">
+          <!-- Payment modes dynamically load honge -->
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-success" onclick="confirmPayment()">Confirm & Pay</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  const { ipcRenderer } = require("electron");
+ const today = new Date().toISOString().split("T")[0];
+  document.getElementById("filter-date").value = today;
+  // Dynamic Page Switcher
+ function showPage(pageId, event) {
+  if(event) event.preventDefault();
+
+  // Hide all pages whose id ends with '-page'
+  const pages = document.querySelectorAll("[id$='-page']");
+  pages.forEach(page => {
+    page.style.display = (page.id === pageId ? "block" : "none");
+  });
+
+  // Page-specific actions
+  if(pageId === "sales-page") loadSales();
+  if(pageId === "hold-page") renderHoldOrders(); // <-- Add this line
+}
+
+
+  // Load Sales from Electron main process
+  let allSales = []; // Store sales for filtering
+
+// Load Sales
+function loadSales() {
+  ipcRenderer.invoke("get-sales").then(sales => {
+    allSales = sales; // store globally
+    renderSales(allSales);
+    renderPaymentFilter(); // populate payment filter
+  });
+}
+
+// Render Sales Table
+function renderSales(sales) {
+  const tbody = document.getElementById("sales-body");
+  tbody.innerHTML = "";
+
+  if (sales.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No sales found</td></tr>`;
+  } else {
+    sales.forEach((sale, index) => {
+      let items = sale.items.map(i => `${i.name} (x${i.qty})`).join(", ");
+      tbody.innerHTML += `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${sale.id}</td>
+          <td>${sale.date}</td>
+          <td>${items}</td>
+          <td>${sale.paymentMode}</td>
+          <td>₹${sale.total}</td>
+          <td>
+            <button class="btn btn-sm btn-info" onclick='viewSale(${index})'>
+              <i class="bi bi-eye"></i> View
+            </button>
+          </td>
+        </tr>`;
+    });
+  }
+}
+
+// View Sale Modal
+function viewSale(index) {
+  const sale = allSales[index];
+  let itemsHtml = sale.items.map(i => `<tr><td>${i.name}</td><td>${i.qty}</td><td>₹${i.price}</td><td>₹${i.qty*i.price}</td></tr>`).join("");
+  
+  let modalHtml = `
+    <div class="modal fade" id="viewSaleModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title">Sale Details</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p><strong>Date:</strong> ${sale.date}</p>
+            <p><strong>Payment Mode:</strong> ${sale.paymentMode}</p>
+            <table class="table table-bordered" style="font-size: 12px;">
+              <thead>
+                <tr><th>Item</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr>
+              </thead>
+              <tbody>
+                ${itemsHtml}
+              </tbody>
+            </table>
+            <h5>Total: ₹${sale.total}</h5>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  let modal = new bootstrap.Modal(document.getElementById('viewSaleModal'));
+  modal.show();
+  document.getElementById('viewSaleModal').addEventListener('hidden.bs.modal', () => {
+    document.getElementById('viewSaleModal').remove();
+  });
+}
+
+// Filter Sales
+function filterSales() {
+  const search = document.getElementById('search-sales').value.toLowerCase();
+  const dateInput = document.getElementById('filter-date').value; // YYYY-MM-DD
+  const payment = document.getElementById('filter-payment').value;
+
+  const filtered = allSales.filter(sale => {
+    // Search filter
+    const matchSearch = sale.items.some(i => i.name.toLowerCase().includes(search)) || sale.paymentMode.toLowerCase().includes(search);
+
+    // Date filter
+    let matchDate = true;
+    if (dateInput) {
+      const saleDate = new Date(sale.date); // convert string to Date
+      const inputDate = new Date(dateInput);
+      // Compare only year, month, day
+      matchDate = saleDate.getFullYear() === inputDate.getFullYear() &&
+                  saleDate.getMonth() === inputDate.getMonth() &&
+                  saleDate.getDate() === inputDate.getDate();
+    }
+
+    // Payment filter
+    const matchPayment = payment === "all" || sale.paymentMode === payment;
+
+    return matchSearch && matchDate && matchPayment;
+  });
+
+  renderSales(filtered);
+}
+
+
+// Render payment filter options
+function renderPaymentFilter() {
+  const select = document.getElementById('filter-payment');
+  select.innerHTML = `<option value="all">All Payment Modes</option>`;
+  const uniqueModes = [...new Set(allSales.map(s => s.paymentMode))];
+  uniqueModes.forEach(pm => {
+    select.innerHTML += `<option value="${pm}">${pm}</option>`;
+  });
+}
+
+function renderHoldOrders(){
+  const holds = loadHoldOrders();
+  const tbody = document.getElementById("hold-body");
+  tbody.innerHTML = "";
+
+  if(holds.length === 0){
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No hold orders</td></tr>`;
+    return;
+  }
+
+  holds.forEach((h, index)=>{
+    let items = h.items.map(i=>`${i.name} (x${i.qty})`).join(", ");
+    tbody.innerHTML += `
+      <tr>
+        <td>${index+1}</td>
+        <td>${h.date}</td>
+        <td>${items}</td>
+        <td>₹${h.total}</td>
+        <td>
+          <button class="btn btn-sm btn-success" onclick="resumeHoldOrder(${h.id})">Resume</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteHoldOrder(${h.id})">Delete</button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+  window.onload = () => showPage('pos-page');
+  
+</script>
+<script>
+
+  // Attach logout globally
+  window.logout = function() {
+    ipcRenderer.invoke("logout");
+  }
+</script>
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="./renderer.js"></script>
+</body>
+</html>

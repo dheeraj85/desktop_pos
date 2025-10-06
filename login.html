@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Login - POS</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    /* Fullscreen and gradient background */
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      font-family: "Poppins", sans-serif;
+    }
+
+    /* Centered card */
+    .login-box {
+      background: #fff;
+      padding: 50px 40px;
+      border-radius: 20px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+      width: 450px;
+      max-width: 90%;
+      text-align: center;
+      transition: transform 0.3s ease;
+    }
+
+    .login-box:hover {
+      transform: translateY(-5px);
+    }
+
+    .login-box h3 {
+      color: #0d6efd;
+      margin-bottom: 30px;
+      font-weight: 700;
+    }
+
+    .form-control {
+      border-radius: 12px;
+      height: 50px;
+      padding: 10px;
+      font-size: 1rem;
+    }
+
+    .btn-login {
+      background: #0d6efd;
+      border: none;
+      border-radius: 12px;
+      height: 50px;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: 0.3s;
+    }
+
+    .btn-login:hover {
+      background: #0b5ed7;
+    }
+
+    .error-text {
+      font-size: 0.9rem;
+    }
+
+    .login-icon {
+      font-size: 60px;
+      color: #0d6efd;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <i class="bi bi-person-circle login-icon"></i>
+    <h3>POS Login</h3>
+    <div class="mb-3">
+      <label class="form-label text-start w-100">Username</label>
+      <input type="text" id="username" class="form-control" placeholder="Enter username">
+    </div>
+    <div class="mb-3">
+      <label class="form-label text-start w-100">Password</label>
+      <input type="password" id="password" class="form-control" placeholder="Enter password">
+    </div>
+    <button class="btn btn-login w-100 mb-2" onclick="login()" style="color: white;">Login</button>
+    <p class="text-danger mt-2 error-text" id="error"></p>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require("electron");
+
+    // Attach login globally
+    window.login = function() {
+      const user = document.getElementById("username").value.trim();
+      const pass = document.getElementById("password").value.trim();
+
+      if(!user || !pass){
+        document.getElementById("error").innerText = "❌ Please enter username and password!";
+        return;
+      }
+
+      ipcRenderer.invoke("check-login", { user, pass }).then(success => {
+        if(!success){
+          document.getElementById("error").innerText = "❌ Invalid username or password!";
+        }
+      });
+    }
+     // -----------------------------
+  // Trigger login on Enter key
+  // -----------------------------
+  document.addEventListener("keydown", function(event) {
+    if (event.key === "Enter") {
+      login(); // Call login function
+    }
+  });
+  </script>
+</body>
+</html>
