@@ -264,14 +264,14 @@
 
 
 
-<div id="printer-settings" style="padding:8px;border:1px dashed #aaa;margin:8px 0;">
+<!-- <div id="printer-settings" style="padding:8px;border:1px dashed #aaa;margin:8px 0;">
 <label style="display:block;margin-bottom:6px;font-weight:bold;">Printer Settings</label>
 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
 <select id="printerSelect"></select>
 <label><input type="checkbox" id="silentToggle"> Silent print</label>
 <button id="savePrinterBtn">Save</button>
 </div>
-</div>
+</div> -->
 
 <script>
   const { ipcRenderer } = require("electron");
@@ -471,12 +471,12 @@ document.getElementById('silentToggle').checked = !!saved.silentPrint;
 }
 
 
-document.getElementById('savePrinterBtn').addEventListener('click', async()=>{
-const printerName = document.getElementById('printerSelect').value;
-const silent = document.getElementById('silentToggle').checked;
-await ipcRenderer.invoke('settings:set', { defaultPrinter: printerName, silentPrint: silent });
-alert('Printer settings saved');
-});
+// document.getElementById('savePrinterBtn').addEventListener('click', async()=>{
+// const printerName = document.getElementById('printerSelect').value;
+// const silent = document.getElementById('silentToggle').checked;
+// await ipcRenderer.invoke('settings:set', { defaultPrinter: printerName, silentPrint: silent });
+// alert('Printer settings saved');
+// });
 
 
 // Call once on load
