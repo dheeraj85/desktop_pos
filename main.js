@@ -88,3 +88,55 @@ ipcMain.handle("logout", () => {
 });
 
 
+
+// ---------------------------
+// IPC handler to print invoice
+ipcMain.handle("print-invoice", async (event, saleData) => {
+  const win = new BrowserWindow({
+    width: 400,
+    height: 600,
+    show: false, // initially hidden
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false
+    }
+  });
+
+  // Invoice HTML load karo
+  win.loadFile("invoice.html");
+
+  // Jab HTML load ho jaye, tabhi data bhejna
+  win.webContents.once("did-finish-load", () => {
+    win.webContents.executeJavaScript(
+      `window.postMessage(${JSON.stringify(saleData)})`
+    );
+  });
+
+  // Agar chahte ho print hone ke baad window band ho jaye
+  win.webContents.on("did-finish-print", () => {
+    win.close();
+  });
+
+
+  const settingsPath = path.join(app.getPath('userData'), 'settings.json');
+function readSettings(){
+try { return JSON.parse(fs.readFileSync(settingsPath,'utf-8')); } catch(e){ return {}; }
+}
+function writeSettings(s){ fs.writeFileSync(settingsPath, JSON.stringify(s, null, 2)); }
+
+
+ipcMain.handle('settings:get', ()=> readSettings());
+ipcMain.handle('settings:set', (evt, patch)=>{
+const cur = readSettings();
+const next = { ...cur, ...patch };
+writeSettings(next);
+return next;
+});
+
+
+// List printers for renderer
+ipcMain.handle('printer:list', (evt)=> {
+const win = BrowserWindow.fromWebContents(evt.sender);
+return win.webContents.getPrinters();
+});
+});

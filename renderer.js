@@ -472,20 +472,18 @@ function loadProducts(list) {
 
   let html = "";
 
-  list.forEach(p => {
-    const colors = ["#e53935","#8e24aa","#3949ab","#43a047","#fdd835","#fb8c00"];
-    const firstLetterColor = colors[p.id % colors.length]; 
-    const firstLetter = p.name.charAt(0);
-    const restName = p.name.slice(1);
+list.forEach(p => {
+    // const colors = ["#e53935","#8e24aa","#3949ab","#43a047","#fdd835","#fb8c00"];
+    // const firstLetterColor = colors[p.id % colors.length]; 
+    // const firstLetter = p.name.charAt(0);
+    // const restName = p.name.slice(1);
 
     html += `
       <div class="col-md-6 col-lg-3 mb-3">
-        <div class="card product-card h-100 d-flex flex-column align-items-center justify-content-center" onclick="addToCart(${p.id})" style="cursor:pointer; padding:15px;">
-          <div style="width:50px; height:50px; border-radius:50%; background-color:${firstLetterColor}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.5rem; font-weight:bold; margin-bottom:10px;">
-            ${firstLetter}
-          </div>
-          <h6 class="text-center mb-2" style="font-weight:600;font-size:12px">${restName}</h6>
-          <p class="fw-bold text-success mb-0">₹ ${p.price}</p>
+        <div class="card product-card h-100 d-flex flex-column align-items-center justify-content-center" onclick="addToCart(${p.id})" style="cursor:pointer; padding:10px;background-color:#204a87">
+         
+          <h6 class="text-center mb-2" style="font-weight:600;font-size:16px;color:#fff">${p.name} (${p.item_code}</h6>
+          <p class="fw-bold mb-0" style="color:#f5da55;font-size:16px">₹ ${p.price}</p>
         </div>
       </div>
     `;
@@ -521,35 +519,55 @@ function handleSearchKey(e) {
   if (e.key === "Enter") {
     e.preventDefault();
 
-    let search = document.getElementById("search-bar").value.toLowerCase().trim();
-    let itemInput = document.getElementById("search-itemcode");
-    let itemcode = itemInput.value.toLowerCase().trim();
+    const search = document.getElementById("search-bar").value.toLowerCase().trim();
+    const itemInput = document.getElementById("search-itemcode");
+    const itemcode = itemInput.value.toLowerCase().trim();
 
     if (itemcode !== "") {
-      let product = products.find(p => p.item_code.toLowerCase() === itemcode);
+      const product = products.find(p => p.item_code.toLowerCase() === itemcode);
       if (product) {
         addToCart(product.id);
       } else {
-        alert("No product found with item code: " + itemcode);
+        showToast(`❌ No product found with item code: ${itemcode}`);
       }
 
       itemInput.value = "";
       itemInput.focus();
       return; 
-    } 
-    
+    }
+
     if (search !== "") {
-      let product = products.find(p => p.name.toLowerCase().includes(search));
+      const product = products.find(p => p.name.toLowerCase().includes(search));
       if (product) {
         addToCart(product.id);
       } else {
-        alert("No product found with name: " + search);
+        showToast(`❌ No product found with name: ${search}`);
       }
     }
+
     itemInput.focus();
   }
 }
 
+// ✅ Non-blocking message
+function showToast(message) {
+  let toast = document.createElement("div");
+  toast.textContent = message;
+  toast.style.position = "fixed";
+  toast.style.top = "50%";  // middle vertically
+  toast.style.left = "50%";
+  toast.style.transform = "translate(-50%, -50%)";
+  toast.style.background = "#333";
+  toast.style.color = "#fff";
+  toast.style.padding = "8px 16px";
+  toast.style.borderRadius = "6px";
+  toast.style.fontSize = "14px";
+  toast.style.zIndex = "9999";
+  toast.style.opacity = "0.9";
+  document.body.appendChild(toast);
+
+  setTimeout(() => toast.remove(), 2000);
+}
 
 // Add to cart
 function addToCart(id) {
@@ -848,3 +866,160 @@ setInterval(() => pushData(true), 10 * 60 * 1000);
 // ------------------------  Upload Sales End-------------------
 
 
+
+
+
+// ================== [ADDON] Inline Payment + Print Buttons + Shortcuts ==================
+(function injectInlineToolbarHandlers(){
+  // Guard: only wire once
+  if (window.__inlineToolbarWired) return;
+  window.__inlineToolbarWired = true;
+
+  // Buttons (exist because we injected their HTML in index.html)
+  const btnOnly = document.getElementById('btnPrintOnly');
+  const btnKot  = document.getElementById('btnPrintKOT');
+
+  if (btnOnly) btnOnly.addEventListener('click', handlePrintOnly);
+  if (btnKot)  btnKot.addEventListener('click', handlePrintWithKot);
+
+  // Global shortcuts
+  document.addEventListener('keydown', (e) => {
+    const a = document.activeElement;
+    const tag = a?.tagName?.toLowerCase();
+    const typing = a?.isContentEditable || tag === 'input' || tag === 'textarea' || tag === 'select';
+
+    // Ctrl+P => Print invoice only
+    if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'p') {
+      e.preventDefault();
+      handlePrintOnly();
+      return;
+    }
+    // Ctrl+Shift+P => Print with KOT
+    if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'p') {
+      e.preventDefault();
+      handlePrintWithKot();
+      return;
+    }
+    // F2 => focus last Qty input
+    if (e.key === 'F2') {
+      e.preventDefault();
+      const qtyInputs = Array.from(document.querySelectorAll('#cart-items input[type=\"number\"]'));
+      if (qtyInputs.length) {
+        const target = qtyInputs[qtyInputs.length - 1];
+        target.focus();
+        target.select?.();
+      }
+      return;
+    }
+    // Alt+1/Alt+2 => switch payment radio
+    if (!typing && e.altKey && (e.key === '1' || e.key === '2')) {
+      e.preventDefault();
+      const v = e.key === '1' ? 'Cash' : 'Paytm';
+      const el = document.querySelector(`input[name=\"pmode\"][value=\"${v}\"]`);
+      if (el) el.checked = true;
+    }
+  });
+})();
+
+function getSelectedPaymentModeInline(){
+  const el = document.querySelector('input[name="pmode"]:checked');
+  return el ? el.value : (document.getElementById('payment-mode')?.value || 'Cash');
+}
+
+function getCompanyForPrintInline() {
+  try {
+    if (Array.isArray(ItemPage?.company) && ItemPage.company.length) return ItemPage.company[0];
+    if (ItemPage?.company && typeof ItemPage.company === 'object') return ItemPage.company;
+  } catch(e){}
+  return {};
+}
+
+function buildCurrentSaleDataInline(){
+  const totalTxt = document.getElementById("total")?.innerText || "0";
+  return {
+    id: (() => {
+      // Don't collide with confirmPayment() invoice numbering; this is for ad-hoc print
+      const now = Date.now();
+      return `IN-${now % 1000000}`;
+    })(),
+    date: new Date().toLocaleString(),
+    items: Array.isArray(cart) ? cart.map(c => ({
+      id: c.id, name: c.name, price: parseFloat(c.price)||0, qty: parseFloat(c.qty)||0
+    })) : [],
+    total: parseFloat(totalTxt)||0,
+    paymentMode: getSelectedPaymentModeInline(),
+    company: getCompanyForPrintInline()
+  };
+}
+
+// Print ONLY invoice via print.html (no KOT)
+function handlePrintOnly(){
+  if (!cart || cart.length === 0) { alert("Cart is empty!"); return; }
+  const saleData = buildCurrentSaleDataInline();
+  const w = window.open("print.html", "_blank", "width=420,height=800");
+  if (!w) { alert("Popup blocked"); return; }
+  setTimeout(() => { try { w.postMessage(saleData, "*"); } catch(e){} }, 200);
+}
+
+// Print with KOT using existing flow (main -> invoice.html)
+function handlePrintWithKot(){
+  if (!cart || cart.length === 0) { alert("Cart is empty!"); return; }
+  // We will reuse confirmPayment(), but make sure it reads inline radio if available.
+  confirmPayment();
+}
+
+// --- Patch confirmPayment to read inline radio without breaking anything ---
+(function patchConfirmPaymentToReadInline(){
+  const originalConfirm = confirmPayment;
+  window.confirmPayment = function(){
+    // If inline radio exists, temporarily sync the hidden select so old code keeps working
+    const radio = document.querySelector('input[name="pmode"]:checked');
+    const select = document.getElementById("payment-mode");
+    if (radio && select) {
+      // Try to match option by text || value
+      const val = radio.value;
+      let matched = false;
+      for (const opt of Array.from(select.options)) {
+        if (opt.text.trim().toLowerCase() === val.toLowerCase() || opt.value.trim().toLowerCase() == val.toLowerCase()) {
+          select.value = opt.value;
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) {
+        // Fallback: set select value to val if exists, else just leave as-is
+        select.value = val;
+      }
+    }
+    return originalConfirm.apply(this, arguments);
+  }
+})();
+
+/* === SAFE ADDON: Reliable Print (invoice-only) transport === */
+function openPrintWindowWithData(saleData){
+  // Absolute URL for Electron 'file://' contexts
+  const url = new URL('print.html', window.location.href).href;
+  // Multiple channels so at least one works:
+  const w = window.open(url, '_blank', 'width=420,height=800');
+  if (!w) { alert('Popup blocked'); return; }
+
+  try { w.name = JSON.stringify(saleData); } catch(e){}
+  try { localStorage.setItem('lastSalePrint', JSON.stringify(saleData)); } catch(e){}
+
+  // URL hash encoding as extra
+  try {
+    const enc = btoa(unescape(encodeURIComponent(JSON.stringify(saleData))));
+    // if same-origin, we can navigate; otherwise child will read window.name/localStorage
+    setTimeout(() => { try { w.location.hash = enc; } catch(e){} }, 20);
+  } catch(e){}
+
+  // postMessage too (primary)
+  setTimeout(() => { try { w.postMessage(saleData, '*'); } catch(e){} }, 200);
+}
+
+// Replace earlier handler with this reliable one (no other changes required)
+function handlePrintOnly(){
+  if (!cart || cart.length === 0) { alert('Cart is empty!'); return; }
+  const saleData = buildCurrentSaleDataInline ? buildCurrentSaleDataInline() : buildCurrentSaleData();
+  openPrintWindowWithData(saleData);
+}
