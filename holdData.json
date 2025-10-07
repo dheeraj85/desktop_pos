@@ -1,17 +1,1 @@
-[
-  {
-    "id": 1759771285410,
-    "date": "10/6/2025, 10:51:25 PM",
-    "items": [
-      {
-        "id": 171,
-        "name": "DHOKLA BOX 250GM",
-        "price": 50,
-        "qty": 1,
-        "rate_change_permission": 0
-      }
-    ],
-    "total": "150.00",
-    "paymentMode": "hold"
-  }
-]
+[]

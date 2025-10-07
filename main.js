@@ -140,5 +140,3 @@ const win = BrowserWindow.fromWebContents(evt.sender);
 return win.webContents.getPrinters();
 });
 });
-
-

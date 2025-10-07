@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Invoice Only</title>
+  <style>
+    @media print {
+      @page { size: 3in auto; margin: 0; }
+      body { margin: 0; padding: 0; }
+    }
+    body {
+      font-family: monospace;
+      font-size: 14px;
+      width: 3in;
+      margin: 0 auto;
+      padding: 0;
+    }
+    .center { text-align: center; font-weight: bold; }
+    .right { text-align: right; }
+    .left { text-align: left; }
+    .small { font-size: 12px; }
+    hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 2px 3px; }
+    th { border-bottom: 1px dashed #000; font-size: 13px; }
+    td.item { text-align: left; width: 45%; }
+    td.qty  { text-align: right; width: 15%; }
+    td.rate { text-align: right; width: 20%; }
+    td.amt  { text-align: right; width: 20%; }
+    .slip-padding-end { height: 8mm; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    const root = document.getElementById('root');
+    const fmt = (n) => (isNaN(+n) ? "0.00" : (+n).toFixed(2));
+
+    function buildInvoiceHTML(saleData) {
+      const company = saleData.company || {};
+      const dateStr = saleData.date || new Date().toLocaleString();
+      const tokenNo = saleData.id ? String(saleData.id).replace(/\\D/g, '') : Math.floor(Math.random()*900 + 100);
+
+      let html = `
+        <div class="bill-slip">
+          <table style="width:100%; text-align:center;">
+            <tr>
+              <td>
+                <b style="font-size:16px;">${company.company_name || "Company Name"}</b><br>
+                <label style="font-size:11px;">
+                  ${company.company_address || ""}<br>
+                  &#9742; ${company.contact_number || ""}<br>
+                  GSTIN: ${company.company_gstin || "N/A"}
+                </label>
+              </td>
+            </tr>
+          </table>
+
+          <hr>
+          <div class="small">
+            <b>Date:</b> ${dateStr}<br>
+            <b>Invoice:</b> ${saleData.id || ("INV" + tokenNo)}<br>
+          </div>
+          <hr>
+
+          <table>
+            <thead>
+              <tr>
+                <th class="left">Item</th>
+                <th class="qty">Qty</th>
+                <th class="rate">Rate</th>
+                <th class="amt">Amt</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      let computedTotal = 0;
+      (saleData.items || []).forEach(item => {
+        const qty = +item.qty || 0;
+        const rate = +item.price || 0;
+        const amt  = qty * rate;
+        computedTotal += amt;
+
+        html += `
+          <tr>
+            <td class="item">${item.name || ""}</td>
+            <td class="qty">${fmt(qty)}</td>
+            <td class="rate">${fmt(rate)}</td>
+            <td class="amt">${fmt(amt)}</td>
+          </tr>`;
+      });
+
+      const finalTotal = saleData.total != null ? +saleData.total : computedTotal;
+
+      html += `
+            </tbody>
+          </table>
+
+          <hr>
+          <div class="right"><b>Total: ₹${fmt(finalTotal)}</b></div>
+          <div class="center small">Payment Mode: ${saleData.paymentMode || "Cash"}</div>
+          <hr>
+          <div class="center">Thank You! Visit Again 🙏</div>
+          <div class="slip-padding-end"></div>
+        </div>
+      `;
+
+      return html;
+    }
+
+    window.addEventListener('message', (evt) => {
+      const saleData = evt.data;
+      if (!saleData || !Array.isArray(saleData.items)) return;
+      root.innerHTML = buildInvoiceHTML(saleData);
+      setTimeout(() => window.print(), 50);
+    });
+  </script>
+</body>
+</html>
