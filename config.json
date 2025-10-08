@@ -1,13 +1,9 @@
 {
-  "companyName": "Sagar Gaire",
+  "companyName": "HARIVIND",
   "webhookUrl1": "https://sagargaire.com/demo/desktop-api",
-  "PushUrl1": " http://localhost/local_pos_online/users/receive", 
-
- "webhookUrl": "http://localhost/harivind/desktop-api",
-  "PushUrl": " http://localhost/harivind/desktop-api/receive", 
-
-  "authKey": "51dsfsdfdbsd",
-  "mobile": "7000147928",
-  "address": "2, Durga Mandir Rd, 7 No Stop,Near State Bank, No 6 Locality, Shivaji Nagar, Bhopal, Madhya Pradesh 462016",
-  "email": "sagar.com"
+  "PushUrl1": " http://localhost/local_pos_online/users/receive",
+  "webhookUrl": "https://turrant.com/harivind_new/desktop-api",
+  "PushUrl": "https://turrant.com/harivind_new/desktop-api/receive",
+  "authKey": "Russel_anukool825",
+  "lastPushedId": "HR-1003"
 }

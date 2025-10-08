@@ -39,7 +39,7 @@ app.whenReady().then(() => {
 
 // ✅ Handle login
 ipcMain.handle("check-login", (event, { user, pass }) => {
-  if (user === "admin" && pass === "1234") {
+  if (user === "pos_rc" && pass === "pos@rc") {
     loginWindow.close();
     createMainWindow();
     return true;

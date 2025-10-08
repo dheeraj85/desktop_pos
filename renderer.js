@@ -802,37 +802,96 @@ loadData();
 
 // ------------------------ Upload Sales Start -------------------
 
+// Helper: safe JSON read
+function readJsonSafe(filePath, fallback) {
+  try {
+    if (!fs.existsSync(filePath)) return fallback;
+    const txt = fs.readFileSync(filePath, "utf-8");
+    if (!txt) return fallback;
+    return JSON.parse(txt);
+  } catch (e) {
+    console.error("readJsonSafe error:", e);
+    return fallback;
+  }
+}
+
+// Helper: numeric compare for invoice-like IDs (e.g., "REW-1005" -> 1005)
+function numericPart(id) {
+  if (!id || typeof id !== "string") return NaN;
+  const m = id.match(/(\d+)(?!.*\d)/); // last number in string
+  return m ? parseInt(m[1], 10) : NaN;
+}
+
+// Compute list of records to push based on lastPushedId
+function computePendingSales(allSales, lastPushedId) {
+  if (!Array.isArray(allSales) || allSales.length === 0) return [];
+
+  // 1) Try exact index match
+  if (lastPushedId) {
+    const idx = allSales.findIndex(s => s && s.id === lastPushedId);
+    if (idx >= 0) {
+      return allSales.slice(idx + 1);
+    }
+  }
+
+  // 2) Fallback to numeric comparison (prefix-agnostic, e.g., REW-1005)
+  if (lastPushedId) {
+    const lastNum = numericPart(lastPushedId);
+    if (!isNaN(lastNum)) {
+      return allSales.filter(s => {
+        const n = numericPart(s?.id || "");
+        return !isNaN(n) && n > lastNum;
+      });
+    }
+  }
+
+  // 3) If no lastPushedId or no match, push everything
+  return allSales;
+}
+
+// ==========================
+// Push only pending records
+// ==========================
 async function pushData(auto = false) {
   const statusEl = document.getElementById("status");
   statusEl.innerText = auto ? "Auto pushing data..." : "Pushing data...";
 
   try {
-    const configRaw = fs.readFileSync(configFile, "utf-8");
-    const config = JSON.parse(configRaw);
-
-    if (!config.PushUrl) {
+    // Load config
+    const config = readJsonSafe(configFile, {});
+    if (!config || !config.PushUrl) {
       throw new Error("PushUrl not found in config.json");
     }
+    const lastPushedId = config.lastPushedId || null;
 
-    if (!fs.existsSync(saleFile)) return;
+    // Load local sales
+    let allSales = readJsonSafe(saleFile, []);
+    if (!Array.isArray(allSales)) allSales = [allSales];
 
-    const rawData = fs.readFileSync(saleFile, "utf-8");
-    let saleData = JSON.parse(rawData);
+    // Filter for pending only (after lastPushedId)
+    const pending = computePendingSales(allSales, lastPushedId);
 
-    if (!Array.isArray(saleData)) {
-      saleData = [saleData];
+    if (!pending.length) {
+      statusEl.innerText = "✅ Nothing to push (already up-to-date).";
+      statusEl.classList.remove("text-danger");
+      statusEl.classList.add("text-success");
+      setTimeout(() => { statusEl.innerText = ""; statusEl.classList.remove("text-success"); }, 2500);
+      return;
     }
 
-    const transformedData = saleData.map(sale => ({
+    // Transform for API
+    const payload = pending.map(sale => ({
       sale: {
         id: sale.id,
         invoice_number: sale.id,
         token_no: "",
         year: new Date(sale.date).getFullYear(),
         customer_name: "Walk-in Customer",
-        date: sale.date
+        date: sale.date,
+        total: sale.total,
+        paymentMode: sale.paymentMode,
       },
-      sale_items: sale.items.map(item => ({
+      sale_items: (sale.items || []).map(item => ({
         item_id: item.id,
         variant_value_id: null,
         item_brand: "",
@@ -856,26 +915,40 @@ async function pushData(auto = false) {
       }))
     }));
 
-    const pushRes = await fetch(config.PushUrl, {  // Yii2 endpoint
+    // Push to server (Yii2)
+    const pushRes = await fetch(config.PushUrl, {
       method: "POST",
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${config.authKey}`   
+        ...(config.authKey ? { "Authorization": `Bearer ${config.authKey}` } : {})
       },
-      body: JSON.stringify(transformedData)
+      body: JSON.stringify(payload)
     });
 
-    const responseJson = await pushRes.json();
+    let responseJson = {};
+    try { responseJson = await pushRes.json(); } catch(e){}
 
     if (pushRes.ok && responseJson.status === "success") {
-      statusEl.innerText = (auto ? "✅ Auto Push Success!" : "✅ Sale data successfully pushed!") 
-        + " Last ID: " + responseJson.last_sale_id;
+      // Prefer server-reported last id, else take the last pending id
+      const serverLast = responseJson.last_sale_id;
+      const localLast = pending[pending.length - 1]?.id;
+      const newLast = serverLast || localLast || lastPushedId;
+
+      // Update config.json with lastPushedId (atomic-ish)
+      try {
+        const updatedConfig = { ...config, lastPushedId: newLast };
+        fs.writeFileSync(configFile, JSON.stringify(updatedConfig, null, 2), "utf-8");
+      } catch (e) {
+        console.error("Failed to update config.json lastPushedId:", e);
+      }
+
+      statusEl.innerText = (auto ? "✅ Auto Push Success!" : "✅ Sale data successfully pushed!")
+        + " Last ID: " + (newLast || "-");
       statusEl.classList.remove("text-danger");
       statusEl.classList.add("text-success");
-
     } else {
-      statusEl.innerText = (auto ? "❌ Auto Push Failed! " : "❌ Push Failed! ") 
-        + (responseJson.message || "Server rejected data");
+      const msg = responseJson.message || `Server rejected data (HTTP ${pushRes.status})`;
+      statusEl.innerText = (auto ? "❌ Auto Push Failed! " : "❌ Push Failed! ") + msg;
       statusEl.classList.remove("text-success");
       statusEl.classList.add("text-danger");
     }
@@ -887,15 +960,20 @@ async function pushData(auto = false) {
 
   } catch (err) {
     console.error("Push Error:", err);
+    const statusEl = document.getElementById("status");
     statusEl.innerText = "⚠️ Push Error: " + err.message;
     statusEl.classList.remove("text-success");
     statusEl.classList.add("text-danger");
   }
 }
 
+
+
+
+
 document.getElementById("pushDataBtn").addEventListener("click", () => pushData(false));
 
-setInterval(() => pushData(true), 10 * 60 * 1000);
+//setInterval(() => pushData(true), 10 * 60 * 1000);
 
 // setInterval(() => pushData(true), 10 * 1000);
 
