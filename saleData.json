@@ -1,13 +1,13 @@
 [
   {
-    "id": "IN-1001",
-    "date": "10/7/2025, 8:47:38 PM",
+    "id": "HR-1001",
+    "date": "7/10/2025, 9:47:29 pm",
     "items": [
       {
         "id": 5,
         "name": "CHOCOLATE BROWNIE",
         "price": 50,
-        "qty": 0.25,
+        "qty": 1,
         "rate_change_permission": 0
       },
       {
@@ -16,92 +16,34 @@
         "price": 80,
         "qty": 1,
         "rate_change_permission": 0
+      },
+      {
+        "id": 12,
+        "name": "CASHEW FINGER BAKLAVA",
+        "price": 1300,
+        "qty": 2,
+        "rate_change_permission": 0
       }
     ],
-    "total": "93",
-    "paymentMode": "cash"
+    "total": "2730.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
   },
   {
-    "id": "IN-1002",
-    "date": "10/7/2025, 8:47:48 PM",
+    "id": "HR-1002",
+    "date": "7/10/2025, 10:02:59 pm",
     "items": [
-      {
-        "id": 4,
-        "name": "VEG CHEESE GARLIC BUN",
-        "price": 80,
-        "qty": 0.25,
-        "rate_change_permission": 0
-      },
       {
         "id": 8,
         "name": "PLAIN FINGER BAKLAVA",
         "price": 1200,
         "qty": 1,
         "rate_change_permission": 0
-      }
-    ],
-    "total": "1220",
-    "paymentMode": "cash"
-  },
-  {
-    "id": "IN-1003",
-    "date": "10/7/2025, 8:55:34 PM",
-    "items": [
+      },
       {
         "id": 9,
         "name": "ASSORTED BAKLAVA (325GM)",
         "price": 590,
-        "qty": 1,
-        "rate_change_permission": 0
-      },
-      {
-        "id": 14,
-        "name": "BAKLAWA",
-        "price": 1200,
-        "qty": 1,
-        "rate_change_permission": 0
-      }
-    ],
-    "total": "1790",
-    "paymentMode": "cash"
-  },
-  {
-    "id": "IN-1004",
-    "date": "10/7/2025, 9:02:51 PM",
-    "items": [
-      {
-        "id": 4,
-        "name": "VEG CHEESE GARLIC BUN",
-        "price": 80,
-        "qty": 1,
-        "rate_change_permission": 0
-      },
-      {
-        "id": 5,
-        "name": "CHOCOLATE BROWNIE",
-        "price": 50,
-        "qty": 1,
-        "rate_change_permission": 0
-      }
-    ],
-    "total": "130",
-    "paymentMode": "cash"
-  },
-  {
-    "id": "IN-1005",
-    "date": "10/7/2025, 9:07:11 PM",
-    "items": [
-      {
-        "id": 4,
-        "name": "VEG CHEESE GARLIC BUN",
-        "price": 80,
-        "qty": 1,
-        "rate_change_permission": 0
-      },
-      {
-        "id": 5,
-        "name": "CHOCOLATE BROWNIE",
-        "price": 50,
         "qty": 1,
         "rate_change_permission": 0
       },
@@ -113,27 +55,35 @@
         "rate_change_permission": 0
       },
       {
-        "id": 11,
-        "name": "CASHEW BAKLAVA TART",
-        "price": 1490,
+        "id": 18,
+        "name": "LADI PAV (6PCS)",
+        "price": 35,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "3125.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
+  },
+  {
+    "id": "HR-1003",
+    "date": "7/10/2025, 10:28:43 pm",
+    "items": [
+      {
+        "id": 2,
+        "name": "BHAJI PAV",
+        "price": 45,
+        "qty": 1,
+        "rate_change_permission": 1
+      },
+      {
+        "id": 3,
+        "name": "MAWA MUFFIN",
+        "price": 30,
         "qty": 1,
         "rate_change_permission": 0
       },
-      {
-        "id": 17,
-        "name": "BADAM CRUNCH 225GM",
-        "price": 170,
-        "qty": 1,
-        "rate_change_permission": 1
-      }
-    ],
-    "total": "3090",
-    "paymentMode": "cash"
-  },
-  {
-    "id": "IN-1006",
-    "date": "10/7/2025, 9:07:54 PM",
-    "items": [
       {
         "id": 1092,
         "name": "KAJU KATLI",
@@ -142,13 +92,74 @@
         "rate_change_permission": 1
       }
     ],
-    "total": "1080",
-    "paymentMode": "cash"
+    "total": "1155.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
   },
   {
-    "id": "IN-1007",
-    "date": "10/7/2025, 9:08:30 PM",
+    "id": "HR-1004",
+    "date": "7/10/2025, 10:33:39 pm",
     "items": [
+      {
+        "id": 4,
+        "name": "VEG CHEESE GARLIC BUN",
+        "price": 80,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 8,
+        "name": "PLAIN FINGER BAKLAVA",
+        "price": 1200,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "1280.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
+  },
+  {
+    "id": "HR-1005",
+    "date": "7/10/2025, 10:35:03 pm",
+    "items": [
+      {
+        "id": 12,
+        "name": "CASHEW FINGER BAKLAVA",
+        "price": 1300,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 14,
+        "name": "BAKLAWA",
+        "price": 1200,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 21,
+        "name": "CREAM DONUT",
+        "price": 30,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "2530.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
+  },
+  {
+    "id": "HR-1006",
+    "date": "7/10/2025, 10:49:26 pm",
+    "items": [
+      {
+        "id": 4,
+        "name": "VEG CHEESE GARLIC BUN",
+        "price": 80,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
       {
         "id": 5,
         "name": "CHOCOLATE BROWNIE",
@@ -157,43 +168,52 @@
         "rate_change_permission": 0
       },
       {
-        "id": 4,
-        "name": "VEG CHEESE GARLIC BUN",
-        "price": 80,
+        "id": 9,
+        "name": "ASSORTED BAKLAVA (325GM)",
+        "price": 590,
         "qty": 1,
         "rate_change_permission": 0
       }
     ],
-    "total": "130",
-    "paymentMode": "cash"
+    "total": "720.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
   },
   {
-    "id": "IN-1008",
-    "date": "10/7/2025, 9:13:04 PM",
+    "id": "HR-1007",
+    "date": "7/10/2025, 10:49:46 pm",
     "items": [
       {
-        "id": 11,
-        "name": "CASHEW BAKLAVA TART",
-        "price": 1490,
+        "id": 17,
+        "name": "BADAM CRUNCH 225GM",
+        "price": 170,
+        "qty": 0.65,
+        "rate_change_permission": 1
+      },
+      {
+        "id": 18,
+        "name": "LADI PAV (6PCS)",
+        "price": 35,
         "qty": 1,
         "rate_change_permission": 0
       },
       {
-        "id": 281,
-        "name": "CASSATA PASTRY",
-        "price": 90,
-        "qty": 0.25,
+        "id": 25,
+        "name": "WHOLE WHEAT BREAD(M)",
+        "price": 45,
+        "qty": 1,
         "rate_change_permission": 0
       },
       {
-        "id": 853,
-        "name": "HAVMOR ITALIAN CASSATA (500 ML)",
-        "price": 320,
+        "id": 1092,
+        "name": "KAJU KATLI",
+        "price": 1080,
         "qty": 1,
-        "rate_change_permission": 0
+        "rate_change_permission": 1
       }
     ],
-    "total": "1833",
-    "paymentMode": "cash"
+    "total": "1271.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
   }
 ]

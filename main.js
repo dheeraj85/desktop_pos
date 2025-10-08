@@ -140,3 +140,31 @@ const win = BrowserWindow.fromWebContents(evt.sender);
 return win.webContents.getPrinters();
 });
 });
+
+
+
+// IPC handler to print invoice ONLY (no KOT) using print.html
+ipcMain.handle("print-invoice-only", async (event, saleData) => {
+  const win = new BrowserWindow({
+    width: 400,
+    height: 600,
+    show: false,
+    webPreferences: { nodeIntegration: true, contextIsolation: false }
+  });
+
+  win.loadFile("print.html");
+
+  win.webContents.once("did-finish-load", () => {
+    if (!saleData.date) {
+      saleData.date = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+    }
+    win.webContents.executeJavaScript(
+      `window.postMessage(${JSON.stringify(saleData)})`
+    );
+  });
+
+  win.webContents.on("did-finish-print", () => { win.close(); });
+});
+
+
+

@@ -413,56 +413,6 @@ function renderPaymentModes() {
   });
 }
 
-// Products rendering
-// function loadProducts(list) {
-//   let container = document.getElementById("product-list");
-//   container.innerHTML = "";
-
-//   list.forEach(p => {
-//     // Random color for first letter
-//     const colors = ["#e53935","#8e24aa","#3949ab","#43a047","#fdd835","#fb8c00"];
-//     const firstLetterColor = colors[p.id % colors.length];
-
-//     // Split name into first letter + rest
-//     const firstLetter = p.name.charAt(0);
-//     const restName = p.name.slice(1);
-
-//     container.innerHTML += `
-//       <div class="col-md-6 col-lg-3 mb-3">
-//         <div class="card product-card h-100 d-flex flex-column align-items-center justify-content-center" onclick="addToCart(${p.id})" style="cursor:pointer; padding:15px;">
-          
-//           <!-- First letter as badge -->
-//           <div style="width:50px; height:50px; border-radius:50%; background-color:${firstLetterColor}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.5rem; font-weight:bold; margin-bottom:10px;">
-//             ${firstLetter}
-//           </div>
-
-//           <!-- Rest of name -->
-//           <h6 class="text-center mb-2" style="font-weight:600;font-size:12px">${restName}</h6>
-
-//           <!-- Price -->
-//           <p class="fw-bold text-success mb-0">₹ ${p.price}</p>
-//         </div>
-//       </div>
-//     `;
-//   });
-// }
-
-
-// Filtering
-// Filtering
-// function filterProducts() {
-//   let search = document.getElementById("search-bar").value.toLowerCase();
-//   let category = document.getElementById("category-filter").value;
-//   let itemcode = document.getElementById("search-itemcode").value.toLowerCase(); // item code input
-//   let filtered = products.filter(p => {
-//     let matchCategory = (category === "all" || p.category_id === category);
-//     let matchSearch = p.name.toLowerCase().includes(search);
-//     let matchCode = p.item_code.toLowerCase().includes(itemcode); // item code match
-//     return matchCategory && matchSearch && matchCode;
-//   });
-//   loadProducts(filtered);
-// }
-
 
 
 // Products rendering
@@ -472,11 +422,7 @@ function loadProducts(list) {
 
   let html = "";
 
-list.forEach(p => {
-    // const colors = ["#e53935","#8e24aa","#3949ab","#43a047","#fdd835","#fb8c00"];
-    // const firstLetterColor = colors[p.id % colors.length]; 
-    // const firstLetter = p.name.charAt(0);
-    // const restName = p.name.slice(1);
+list.forEach(p => { 
 
     html += `
       <div class="col-md-6 col-lg-3 mb-3">
@@ -699,65 +645,156 @@ function openPaymentModal() {
   modal.show();
 }
 
-// Confirm payment
+// Confirm payment (prefix-safe + robust save)
 function confirmPayment() {
-  const mode = document.getElementById("payment-mode").value;
-  const total = document.getElementById("total").innerText;
+  const modeEl = document.querySelector('input[name="pmode"]:checked') || document.getElementById("payment-mode");
+  const mode = modeEl ? (modeEl.value || modeEl.innerText || "Cash") : "Cash";
+  const totalTxt = (document.getElementById("total")?.innerText || "0").toString().trim();
+  const total = isNaN(+totalTxt) ? totalTxt : (+totalTxt).toFixed(2);
 
-  // Read existing sales
+  // 1) Read sale_prefix from company.json (supports array or object)
+  let salePrefix = "";
+  try {
+    const companyPath = path.join(__dirname, "company.json");
+    if (fs.existsSync(companyPath)) {
+      const raw = fs.readFileSync(companyPath, "utf8").trim();
+      if (raw) {
+        const json = JSON.parse(raw);
+        const companyObj = Array.isArray(json) ? json[0] : json;
+        if (companyObj && companyObj.sale_prefix) {
+          salePrefix = String(companyObj.sale_prefix).trim();
+        }
+      }
+    }
+  } catch(err) {
+    console.error("company.json read error:", err);
+  }
+
+  // normalize prefix: ensure trailing '-' exactly once (if non-empty)
+  if (salePrefix) {
+    salePrefix = salePrefix.replace(/\s+/g, "");
+    if (!salePrefix.endsWith("-")) salePrefix += "-";
+    // avoid "--"
+    salePrefix = salePrefix.replace(/-+$/, "-");
+  }
+
+  // 2) Load existing sales (robust)
   let sales = [];
-  if (fs.existsSync(saleFile)) {
-    const data = fs.readFileSync(saleFile, "utf8");
-    if (data) {
-      try { sales = JSON.parse(data); } catch(e) { sales = []; }
+  try {
+    if (fs.existsSync(saleFile)) {
+      const data = fs.readFileSync(saleFile, "utf8");
+      if (data) sales = JSON.parse(data);
     }
+    if (!Array.isArray(sales)) sales = [];
+  } catch (e) {
+    console.error("sales load error:", e);
+    sales = [];
   }
 
-  // Determine last invoice number safely
-  let lastInvoiceNo = 1000; // default start
-  if (sales.length > 0) {
-    // Filter only those sales which have 'id' starting with 'IN-'
-    const invoiceNumbers = sales
-      .map(s => s.id)
-      .filter(id => typeof id === "string" && id.startsWith("IN-"))
-      .map(id => parseInt(id.split('-')[1]));
-    
-    if (invoiceNumbers.length > 0) {
-      lastInvoiceNo = Math.max(...invoiceNumbers);
-    }
+  // 3) Determine last invoice number for THIS prefix only
+  let lastNum = 1000; // default start
+  try {
+    const nums = sales.map(s => {
+      let id = (s && s.id) ? String(s.id) : "";
+      if (!id) return null;
+
+      // Only consider IDs that match current prefix (or numeric only if no prefix set)
+      if (salePrefix) {
+        if (!id.startsWith(salePrefix)) return null;
+        id = id.slice(salePrefix.length); // strip prefix for parsing
+      } else {
+        // when no prefix, ignore IDs that are not pure numeric at the start
+        if (!/^\d+/.test(id)) return null;
+      }
+
+      // If legacy had "IN-" or anything non-numeric, drop it
+      id = id.replace(/^IN-?/i, "");
+      const num = parseInt(id, 10);
+      return Number.isFinite(num) ? num : null;
+    }).filter(n => n !== null);
+
+    if (nums.length) lastNum = Math.max(...nums);
+  } catch (e) {
+    console.error("invoice parse error:", e);
   }
 
-  const invoiceNo = `IN-${lastInvoiceNo + 1}`;
+  // 4) Generate next id WITHOUT "IN-"
+  const nextNumber = lastNum + 1;
+  const invoiceNo = salePrefix ? `${salePrefix}${nextNumber}` : `${nextNumber}`;
 
-  let saleData = {
-    id: invoiceNo,        // Invoice number
-    date: new Date().toLocaleString(),
-    items: cart,
+  // 5) Build sale object
+  const saleData = {
+    id: invoiceNo,
+    date: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
+    items: Array.isArray(cart) ? cart : [],
     total: total,
-    paymentMode: mode
+    paymentMode: mode,
+    sale_prefix: salePrefix
   };
 
-  // Save to JSON
-  sales.push(saleData);
-  fs.writeFileSync(saleFile, JSON.stringify(sales, null, 2));
+  // 6) Ensure directory exists, then save safely
+  try {
+    const dir = path.dirname(saleFile);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  } catch (e) {
+    console.error("mkdir error:", e);
+  }
 
-  // Print invoice
-  printInvoice(saleData);
+  try {
+    sales.push(saleData);
+    fs.writeFileSync(saleFile, JSON.stringify(sales, null, 2), "utf8");
+  } catch (e) {
+    console.error("write sales error:", e);
+    alert("Unable to save sale! Check file permissions/path.");
+    return; // don't proceed to print if save failed
+  }
 
-  // Reset cart
+  // 7) Print invoice (existing flow)
+  try { doPrint(saleData); } catch(e){ console.error("printInvoice error:", e); }
+
+  // 8) Reset UI
   cart = [];
   renderCart();
 
-  // Close modal
-  bootstrap.Modal.getInstance(document.getElementById("paymentModal")).hide();
+  // 9) Close modal if present (non-blocking)
+  try {
+    const modal = bootstrap.Modal.getInstance(document.getElementById("paymentModal"));
+    if (modal) modal.hide();
+  } catch (e) {}
 }
 
 
-// Print invoice
 function printInvoice(saleData) {
-  const { ipcRenderer } = require("electron");
- // alert('Printing Invoice...');
- ipcRenderer.invoke("print-invoice", saleData);
+  try {
+    const { ipcRenderer } = require("electron");
+    ipcRenderer.invoke("print-invoice", saleData);
+  } catch (e) {
+    console.error("printInvoice IPC failed, falling back to popup:", e);
+    // fallback (optional): open print.html directly
+    const w = window.open("invoice.html", "_blank", "width=420,height=800");
+    if (w) setTimeout(() => { try { w.postMessage(saleData, "*"); } catch(e){} }, 200);
+  }
+}
+
+function printInvoiceOnly(saleData) {
+  try {
+    const { ipcRenderer } = require("electron");
+    ipcRenderer.invoke("print-invoice-only", saleData);
+  } catch (e) {
+    console.error("printInvoiceOnly IPC failed, falling back to popup:", e);
+    // fallback (optional): open print.html directly
+    const w = window.open("print.html", "_blank", "width=420,height=800");
+    if (w) setTimeout(() => { try { w.postMessage(saleData, "*"); } catch(e){} }, 200);
+  }
+}
+
+// Unified print selector (keeps existing flow intact)
+function doPrint(saleData) {
+  if (window.__invoiceOnlyFlow) {
+    window.__invoiceOnlyFlow = false;       // reset flag for next time
+    return printInvoiceOnly(saleData);      // ✅ invoice-only route
+  }
+  return printInvoice(saleData);            // 🟢 existing KOT + invoice route
 }
 
 
@@ -866,9 +903,6 @@ setInterval(() => pushData(true), 10 * 60 * 1000);
 // ------------------------  Upload Sales End-------------------
 
 
-
-
-
 // ================== [ADDON] Inline Payment + Print Buttons + Shortcuts ==================
 (function injectInlineToolbarHandlers(){
   // Guard: only wire once
@@ -952,13 +986,11 @@ function buildCurrentSaleDataInline(){
   };
 }
 
-// Print ONLY invoice via print.html (no KOT)
-function handlePrintOnly(){
+function handlePrintOnly() {
   if (!cart || cart.length === 0) { alert("Cart is empty!"); return; }
-  const saleData = buildCurrentSaleDataInline();
-  const w = window.open("print.html", "_blank", "width=420,height=800");
-  if (!w) { alert("Popup blocked"); return; }
-  setTimeout(() => { try { w.postMessage(saleData, "*"); } catch(e){} }, 200);
+ // alert('printing invoice only');
+  window.__invoiceOnlyFlow = true;  // ✅ batata hai ki is baar invoice-only chahiye
+  confirmPayment();                 // yahi saleData banayega + save karega + doPrint() call hoga
 }
 
 // Print with KOT using existing flow (main -> invoice.html)
@@ -1017,9 +1049,4 @@ function openPrintWindowWithData(saleData){
   setTimeout(() => { try { w.postMessage(saleData, '*'); } catch(e){} }, 200);
 }
 
-// Replace earlier handler with this reliable one (no other changes required)
-function handlePrintOnly(){
-  if (!cart || cart.length === 0) { alert('Cart is empty!'); return; }
-  const saleData = buildCurrentSaleDataInline ? buildCurrentSaleDataInline() : buildCurrentSaleData();
-  openPrintWindowWithData(saleData);
-}
+
