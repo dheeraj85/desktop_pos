@@ -92,5 +92,28 @@
     "total": "1230.00",
     "paymentMode": "Cash",
     "sale_prefix": "HR-"
+  },
+  {
+    "id": "10001",
+    "date": "9/10/2025, 9:38:49 pm",
+    "items": [
+      {
+        "id": 1092,
+        "name": "KAJU KATLI",
+        "price": 1100,
+        "qty": 1,
+        "rate_change_permission": 1
+      },
+      {
+        "id": 2,
+        "name": "BHAJI PAV",
+        "price": 45,
+        "qty": 1,
+        "rate_change_permission": 1
+      }
+    ],
+    "total": "1145.00",
+    "paymentMode": "Cash",
+    "sale_prefix": ""
   }
 ]
