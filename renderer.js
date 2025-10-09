@@ -1,9 +1,14 @@
 const fs = require("fs");
 const path = require("path");
-const saleFile = path.join(__dirname, "saleData.json");
-const holdFile = path.join(__dirname, "holdData.json");
-const configFile = path.join(__dirname, "config.json");
-const userFile = path.join(__dirname, "user.json");
+
+const dataDir = path.join(__dirname, "data");
+
+const configFile  = path.join(dataDir, "config.json");
+const companyFile = path.join(dataDir, "company.json");
+const userFile    = path.join(dataDir, "user.json");
+const saleFile    = path.join(dataDir, "sale.json");
+
+
 
 
 let products = [];
@@ -14,13 +19,13 @@ let cart = [];
 
 
 const ItemPage = {
-  configFile: path.join(__dirname,"config.json"),
-  productsFile: path.join(__dirname,"products.json"),
-  categoriesFile: path.join(__dirname,"categories.json"),
-  companyFile: path.join(__dirname,"company.json"),
-  paymentFile: path.join(__dirname,"paymentModes.json"),
+  configFile: path.join(dataDir,"config.json"),
+  productsFile: path.join(dataDir,"products.json"),
+  categoriesFile: path.join(dataDir,"categories.json"),
+  companyFile: path.join(dataDir,"company.json"),
+  paymentFile: path.join(dataDir,"paymentModes.json"),
 
-  config: fs.existsSync(path.join(__dirname,"config.json")) ? JSON.parse(fs.readFileSync(path.join(__dirname,"config.json"),"utf-8")) : {},
+  config: fs.existsSync(path.join(dataDir,"config.json")) ? JSON.parse(fs.readFileSync(path.join(dataDir,"config.json"),"utf-8")) : {},
   products: [],
   categories: [],
   company: [],
@@ -177,7 +182,8 @@ syncCompanyDetails: async function() {
     }
 
     // 2️⃣ Read user.json and extract comp_id
-    const userPath = path.join(__dirname, "user.json");
+    
+    const userPath = path.join(dataDir, "user.json");
     if (!fs.existsSync(userPath)) {
       alert("❌ user.json not found!");
       return;
@@ -225,7 +231,7 @@ syncCompanyDetails: async function() {
 
       if (newKey) {
         try {
-          const configPath = path.join(__dirname, "config.json");
+          const configPath = path.join(dataDir, "config.json");
           const currentCfg = fs.existsSync(configPath)
             ? JSON.parse(fs.readFileSync(configPath, "utf8") || "{}")
             : {};
@@ -456,9 +462,9 @@ function deleteHoldOrder(id){
 
 // Load data
 async function loadData() {
-  products = await (await fetch("products.json")).json();
-  categories = await (await fetch("categories.json")).json();
-  paymentModes = await (await fetch("paymentModes.json")).json();
+  products = await (await fetch("data/products.json")).json();
+  categories = await (await fetch("data/categories.json")).json();
+  paymentModes = await (await fetch("data/paymentModes.json")).json();
 
   renderCategories();
   // sirf first 20 products load karenge
@@ -725,7 +731,7 @@ function confirmPayment() {
   // 1) Read sale_prefix from company.json (supports array or object)
   let salePrefix = "";
   try {
-    const companyPath = path.join(__dirname, "company.json");
+    const companyPath = path.join(dataDir, "company.json");
     if (fs.existsSync(companyPath)) {
       const raw = fs.readFileSync(companyPath, "utf8").trim();
       if (raw) {
@@ -1164,10 +1170,8 @@ function handlePrintOnly() {
     showMessage("🛒 Cart is empty!");
     return;
   }
-  window.__invoiceOnlyFlow = true;
-  confirmPayment();
-
-  
+  window.__invoiceOnlyFlow = true;  
+  confirmPayment();                 
 }
 
 // Print with KOT using existing flow (main -> invoice.html)
@@ -1293,7 +1297,7 @@ async function login() {
 
   try {
     // ✅ Read config.json for API URL
-    const configPath = path.join(__dirname, "config.json");
+    const configPath = path.join(dataDir, "config.json");
     let config = {};
 
     if (fs.existsSync(configPath)) {

@@ -1,9 +1,9 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const escpos = require('escpos');
-escpos.USB = require('escpos-usb');
-const usb = require('usb');
+// const escpos = require('escpos');
+// escpos.USB = require('escpos-usb');
+// const usb = require('usb');
 
 let loginWindow;
 let mainWindow;
@@ -50,7 +50,8 @@ ipcMain.handle("check-login", (event, { user, pass }) => {
 // ---------------------------
 // IPC handler to read sales from JSON file
 ipcMain.handle("get-sales", async () => {
-  const filePath = path.join(__dirname, "saleData.json");
+  const dataDir = path.join(__dirname, "data");
+  const filePath = path.join(dataDir, "saleData.json");
   
   try {
     if (!fs.existsSync(filePath)) {
@@ -140,3 +141,31 @@ const win = BrowserWindow.fromWebContents(evt.sender);
 return win.webContents.getPrinters();
 });
 });
+
+
+
+// IPC handler to print invoice ONLY (no KOT) using print.html
+ipcMain.handle("print-invoice-only", async (event, saleData) => {
+  const win = new BrowserWindow({
+    width: 400,
+    height: 600,
+    show: false,
+    webPreferences: { nodeIntegration: true, contextIsolation: false }
+  });
+
+  win.loadFile("print.html");
+
+  win.webContents.once("did-finish-load", () => {
+    if (!saleData.date) {
+      saleData.date = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+    }
+    win.webContents.executeJavaScript(
+      `window.postMessage(${JSON.stringify(saleData)})`
+    );
+  });
+
+  win.webContents.on("did-finish-print", () => { win.close(); });
+});
+
+
+
