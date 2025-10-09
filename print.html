@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <title>Invoice Only</title>
+  <title>Invoice Only (Same UI as invoice.html)</title>
   <style>
     @media print {
       @page { size: 3in auto; margin: 0; }
@@ -20,29 +20,97 @@
     .left { text-align: left; }
     .small { font-size: 12px; }
     hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
+
     table { width: 100%; border-collapse: collapse; }
     th, td { padding: 2px 3px; }
     th { border-bottom: 1px dashed #000; font-size: 13px; }
+
     td.item { text-align: left; width: 45%; }
     td.qty  { text-align: right; width: 15%; }
     td.rate { text-align: right; width: 20%; }
     td.amt  { text-align: right; width: 20%; }
+
+    /* add a slightly taller bottom margin so cutter clears content */
     .slip-padding-end { height: 8mm; }
   </style>
 </head>
 <body>
-  <div id="root"></div>
+  <!-- We will swap this content between KOT and Invoice -->
+  <div id="print-root"></div>
 
   <script>
-    const root = document.getElementById('root');
+    // Electron renderer context (Node enabled)
+    const fs = require("fs");
+    const path = require("path");
+
+    // ---- Read company.json safely ----
+    const companyPath = path.join(__dirname, "company.json");
+    let company = {};
+    try {
+      const data = fs.readFileSync(companyPath, "utf-8");
+      const json = JSON.parse(data);
+      company = Array.isArray(json) ? json[0] : json;
+    } catch (err) {
+      console.error("❌ Error reading company.json:", err);
+    }
+
+    // ---- Helpers ----
+    const root = document.getElementById("print-root");
     const fmt = (n) => (isNaN(+n) ? "0.00" : (+n).toFixed(2));
 
-    function buildInvoiceHTML(saleData) {
-      const company = saleData.company || {};
-      const dateStr = saleData.date || new Date().toLocaleString();
-      const tokenNo = saleData.id ? String(saleData.id).replace(/\\D/g, '') : Math.floor(Math.random()*900 + 100);
+    // Optional: if you later add QZ-Tray, you can send a partial cut here.
+    // Keep it no-op for now so nothing breaks.
+    async function sendPartialCutIfAvailable() {
+      try {
+        // Example for QZ-Tray (requires proper setup & a printer config):
+        // if (window.qz?.websocket?.isActive()) {
+        //   const cfg = qz.configs.create("YOUR_PRINTER_NAME");
+        //   const data = [{ type: 'raw', format: 'hex', data: '1D5601' }]; // GS V 1 = partial cut
+        //   await qz.print(cfg, data);
+        // }
+      } catch (e) {
+        console.warn("Partial cut command skipped:", e);
+      }
+    }
 
-      let html = `
+    function buildKOTHTML(saleData, dateStr, tokenNo, tableNo) {
+      let kotHTML = `
+        <div class="kot-slip">
+          <div class="center">KOT - ${company.company_name || "Restaurant"}</div>
+          <div class="small">Date: ${dateStr}</div>
+          <div class="small">Token: #${tokenNo}</div>
+          <hr>
+          <table>
+            <thead>
+              <tr>
+                <th class="left">Item</th>
+                <th class="qty">Qty</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      saleData.items.forEach(item => {
+        kotHTML += `
+          <tr>
+            <td class="item">${item.name || ""}</td>
+            <td class="qty">${fmt(item.qty || 0)}</td>
+          </tr>`;
+      });
+
+      kotHTML += `
+            </tbody>
+          </table>
+          <hr>
+        
+          <div class="slip-padding-end"></div>
+        </div>
+      `;
+      return kotHTML;
+    }
+
+    function buildInvoiceHTML(saleData, dateStr, tokenNo, tableNo) {
+      let billHTML = `
         <div class="bill-slip">
           <table style="width:100%; text-align:center;">
             <tr>
@@ -59,8 +127,9 @@
 
           <hr>
           <div class="small">
-            <b>Date:</b> ${dateStr}<br>
+            <b>Date:</b> ${saleData.date || dateStr}<br>
             <b>Invoice:</b> ${saleData.id || ("INV" + tokenNo)}<br>
+             <b>Token:</b> #${tokenNo}
           </div>
           <hr>
 
@@ -77,13 +146,13 @@
       `;
 
       let computedTotal = 0;
-      (saleData.items || []).forEach(item => {
-        const qty = +item.qty || 0;
+      saleData.items.forEach(item => {
+        const qty  = +item.qty || 0;
         const rate = +item.price || 0;
         const amt  = qty * rate;
         computedTotal += amt;
 
-        html += `
+        billHTML += `
           <tr>
             <td class="item">${item.name || ""}</td>
             <td class="qty">${fmt(qty)}</td>
@@ -94,7 +163,7 @@
 
       const finalTotal = saleData.total != null ? +saleData.total : computedTotal;
 
-      html += `
+      billHTML += `
             </tbody>
           </table>
 
@@ -106,16 +175,25 @@
           <div class="slip-padding-end"></div>
         </div>
       `;
-
-      return html;
+      return billHTML;
     }
 
-    window.addEventListener('message', (evt) => {
-      const saleData = evt.data;
+    
+    // ---- Entry point: invoice-only (UI identical to invoice.html) ----
+    window.addEventListener("message", (event) => {
+      const saleData = event.data;
       if (!saleData || !Array.isArray(saleData.items)) return;
-      root.innerHTML = buildInvoiceHTML(saleData);
+
+      const now = new Date();
+      const dateStr = saleData.date || now.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+      const tokenNo = saleData.id ? String(saleData.id).replace(/\D/g, "") : Math.floor(Math.random() * 900 + 100);
+      const tableNo = saleData.table || "10";
+
+      const invoiceHTML = buildInvoiceHTML(saleData, dateStr, tokenNo, tableNo);
+      root.innerHTML = invoiceHTML;
       setTimeout(() => window.print(), 50);
     });
+
   </script>
 </body>
 </html>

@@ -70,21 +70,21 @@
       const tokenNo = saleData.id ? saleData.id.replace(/\D/g, "") : Math.floor(Math.random() * 900 + 100);
       const tableNo = saleData.table || "10";
 
-      // 🧾 KOT SECTION
       let kotHTML = `
-      <div class="kot-section page-break">
-        <div class="center">KOT - ${company.company_name || "Restaurant"}</div>
-        <div class="small">Date: ${date}</div>
-        <div class="small">Table: ${tableNo} | Token: #${tokenNo}</div>
-        <hr>
-        <table>
-          <thead>
-            <tr>
-              <th class="left">Item</th>
-              <th class="qty">Qty</th>
-            </tr>
-          </thead>
-          <tbody>
+
+        <div class="kot-slip">
+          <div class="center">KOT - ${company.company_name || "Restaurant"}</div>
+          <div class="small">Date: ${dateStr}</div>
+          <div class="small">Token: #${tokenNo}</div>
+          <hr>
+          <table>
+            <thead>
+              <tr>
+                <th class="left">Item</th>
+                <th class="qty">Qty</th>
+              </tr>
+            </thead>
+            <tbody>
       `;
 
       saleData.items.forEach(item => {
@@ -137,6 +137,26 @@
             </tr>
           </thead>
           <tbody>
+          </table>
+
+          <hr>
+          <div class="small">
+            <b>Date:</b> ${saleData.date || dateStr}<br>
+            <b>Invoice:</b> ${saleData.id || ("INV" + tokenNo)}<br>
+             <b>Token:</b> #${tokenNo}
+          </div>
+          <hr>
+
+          <table>
+            <thead>
+              <tr>
+                <th class="left">Item</th>
+                <th class="qty">Qty</th>
+                <th class="rate">Rate</th>
+                <th class="amt">Amt</th>
+              </tr>
+            </thead>
+            <tbody>
       `;
 
       saleData.items.forEach(item => {

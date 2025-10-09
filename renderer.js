@@ -413,56 +413,6 @@ function renderPaymentModes() {
   });
 }
 
-// Products rendering
-// function loadProducts(list) {
-//   let container = document.getElementById("product-list");
-//   container.innerHTML = "";
-
-//   list.forEach(p => {
-//     // Random color for first letter
-//     const colors = ["#e53935","#8e24aa","#3949ab","#43a047","#fdd835","#fb8c00"];
-//     const firstLetterColor = colors[p.id % colors.length];
-
-//     // Split name into first letter + rest
-//     const firstLetter = p.name.charAt(0);
-//     const restName = p.name.slice(1);
-
-//     container.innerHTML += `
-//       <div class="col-md-6 col-lg-3 mb-3">
-//         <div class="card product-card h-100 d-flex flex-column align-items-center justify-content-center" onclick="addToCart(${p.id})" style="cursor:pointer; padding:15px;">
-          
-//           <!-- First letter as badge -->
-//           <div style="width:50px; height:50px; border-radius:50%; background-color:${firstLetterColor}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.5rem; font-weight:bold; margin-bottom:10px;">
-//             ${firstLetter}
-//           </div>
-
-//           <!-- Rest of name -->
-//           <h6 class="text-center mb-2" style="font-weight:600;font-size:12px">${restName}</h6>
-
-//           <!-- Price -->
-//           <p class="fw-bold text-success mb-0">₹ ${p.price}</p>
-//         </div>
-//       </div>
-//     `;
-//   });
-// }
-
-
-// Filtering
-// Filtering
-// function filterProducts() {
-//   let search = document.getElementById("search-bar").value.toLowerCase();
-//   let category = document.getElementById("category-filter").value;
-//   let itemcode = document.getElementById("search-itemcode").value.toLowerCase(); // item code input
-//   let filtered = products.filter(p => {
-//     let matchCategory = (category === "all" || p.category_id === category);
-//     let matchSearch = p.name.toLowerCase().includes(search);
-//     let matchCode = p.item_code.toLowerCase().includes(itemcode); // item code match
-//     return matchCategory && matchSearch && matchCode;
-//   });
-//   loadProducts(filtered);
-// }
-
 
 
 // Products rendering
@@ -472,11 +422,7 @@ function loadProducts(list) {
 
   let html = "";
 
-list.forEach(p => {
-    // const colors = ["#e53935","#8e24aa","#3949ab","#43a047","#fdd835","#fb8c00"];
-    // const firstLetterColor = colors[p.id % colors.length]; 
-    // const firstLetter = p.name.charAt(0);
-    // const restName = p.name.slice(1);
+list.forEach(p => { 
 
     html += `
       <div class="col-md-6 col-lg-3 mb-3">
@@ -699,65 +645,156 @@ function openPaymentModal() {
   modal.show();
 }
 
-// Confirm payment
+// Confirm payment (prefix-safe + robust save)
 function confirmPayment() {
-  const mode = document.getElementById("payment-mode").value;
-  const total = document.getElementById("total").innerText;
+  const modeEl = document.querySelector('input[name="pmode"]:checked') || document.getElementById("payment-mode");
+  const mode = modeEl ? (modeEl.value || modeEl.innerText || "Cash") : "Cash";
+  const totalTxt = (document.getElementById("total")?.innerText || "0").toString().trim();
+  const total = isNaN(+totalTxt) ? totalTxt : (+totalTxt).toFixed(2);
 
-  // Read existing sales
+  // 1) Read sale_prefix from company.json (supports array or object)
+  let salePrefix = "";
+  try {
+    const companyPath = path.join(__dirname, "company.json");
+    if (fs.existsSync(companyPath)) {
+      const raw = fs.readFileSync(companyPath, "utf8").trim();
+      if (raw) {
+        const json = JSON.parse(raw);
+        const companyObj = Array.isArray(json) ? json[0] : json;
+        if (companyObj && companyObj.sale_prefix) {
+          salePrefix = String(companyObj.sale_prefix).trim();
+        }
+      }
+    }
+  } catch(err) {
+    console.error("company.json read error:", err);
+  }
+
+  // normalize prefix: ensure trailing '-' exactly once (if non-empty)
+  if (salePrefix) {
+    salePrefix = salePrefix.replace(/\s+/g, "");
+    if (!salePrefix.endsWith("-")) salePrefix += "-";
+    // avoid "--"
+    salePrefix = salePrefix.replace(/-+$/, "-");
+  }
+
+  // 2) Load existing sales (robust)
   let sales = [];
-  if (fs.existsSync(saleFile)) {
-    const data = fs.readFileSync(saleFile, "utf8");
-    if (data) {
-      try { sales = JSON.parse(data); } catch(e) { sales = []; }
+  try {
+    if (fs.existsSync(saleFile)) {
+      const data = fs.readFileSync(saleFile, "utf8");
+      if (data) sales = JSON.parse(data);
     }
+    if (!Array.isArray(sales)) sales = [];
+  } catch (e) {
+    console.error("sales load error:", e);
+    sales = [];
   }
 
-  // Determine last invoice number safely
-  let lastInvoiceNo = 1000; // default start
-  if (sales.length > 0) {
-    // Filter only those sales which have 'id' starting with 'IN-'
-    const invoiceNumbers = sales
-      .map(s => s.id)
-      .filter(id => typeof id === "string" && id.startsWith("IN-"))
-      .map(id => parseInt(id.split('-')[1]));
-    
-    if (invoiceNumbers.length > 0) {
-      lastInvoiceNo = Math.max(...invoiceNumbers);
-    }
+  // 3) Determine last invoice number for THIS prefix only
+  let lastNum = 1000; // default start
+  try {
+    const nums = sales.map(s => {
+      let id = (s && s.id) ? String(s.id) : "";
+      if (!id) return null;
+
+      // Only consider IDs that match current prefix (or numeric only if no prefix set)
+      if (salePrefix) {
+        if (!id.startsWith(salePrefix)) return null;
+        id = id.slice(salePrefix.length); // strip prefix for parsing
+      } else {
+        // when no prefix, ignore IDs that are not pure numeric at the start
+        if (!/^\d+/.test(id)) return null;
+      }
+
+      // If legacy had "IN-" or anything non-numeric, drop it
+      id = id.replace(/^IN-?/i, "");
+      const num = parseInt(id, 10);
+      return Number.isFinite(num) ? num : null;
+    }).filter(n => n !== null);
+
+    if (nums.length) lastNum = Math.max(...nums);
+  } catch (e) {
+    console.error("invoice parse error:", e);
   }
 
-  const invoiceNo = `IN-${lastInvoiceNo + 1}`;
+  // 4) Generate next id WITHOUT "IN-"
+  const nextNumber = lastNum + 1;
+  const invoiceNo = salePrefix ? `${salePrefix}${nextNumber}` : `${nextNumber}`;
 
-  let saleData = {
-    id: invoiceNo,        // Invoice number
-    date: new Date().toLocaleString(),
-    items: cart,
+  // 5) Build sale object
+  const saleData = {
+    id: invoiceNo,
+    date: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
+    items: Array.isArray(cart) ? cart : [],
     total: total,
-    paymentMode: mode
+    paymentMode: mode,
+    sale_prefix: salePrefix
   };
 
-  // Save to JSON
-  sales.push(saleData);
-  fs.writeFileSync(saleFile, JSON.stringify(sales, null, 2));
+  // 6) Ensure directory exists, then save safely
+  try {
+    const dir = path.dirname(saleFile);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  } catch (e) {
+    console.error("mkdir error:", e);
+  }
 
-  // Print invoice
-  printInvoice(saleData);
+  try {
+    sales.push(saleData);
+    fs.writeFileSync(saleFile, JSON.stringify(sales, null, 2), "utf8");
+  } catch (e) {
+    console.error("write sales error:", e);
+    alert("Unable to save sale! Check file permissions/path.");
+    return; // don't proceed to print if save failed
+  }
 
-  // Reset cart
+  // 7) Print invoice (existing flow)
+  try { doPrint(saleData); } catch(e){ console.error("printInvoice error:", e); }
+
+  // 8) Reset UI
   cart = [];
   renderCart();
 
-  // Close modal
-  bootstrap.Modal.getInstance(document.getElementById("paymentModal")).hide();
+  // 9) Close modal if present (non-blocking)
+  try {
+    const modal = bootstrap.Modal.getInstance(document.getElementById("paymentModal"));
+    if (modal) modal.hide();
+  } catch (e) {}
 }
 
 
-// Print invoice
 function printInvoice(saleData) {
-  const { ipcRenderer } = require("electron");
- // alert('Printing Invoice...');
- ipcRenderer.invoke("print-invoice", saleData);
+  try {
+    const { ipcRenderer } = require("electron");
+    ipcRenderer.invoke("print-invoice", saleData);
+  } catch (e) {
+    console.error("printInvoice IPC failed, falling back to popup:", e);
+    // fallback (optional): open print.html directly
+    const w = window.open("invoice.html", "_blank", "width=420,height=800");
+    if (w) setTimeout(() => { try { w.postMessage(saleData, "*"); } catch(e){} }, 200);
+  }
+}
+
+function printInvoiceOnly(saleData) {
+  try {
+    const { ipcRenderer } = require("electron");
+    ipcRenderer.invoke("print-invoice-only", saleData);
+  } catch (e) {
+    console.error("printInvoiceOnly IPC failed, falling back to popup:", e);
+    // fallback (optional): open print.html directly
+    const w = window.open("print.html", "_blank", "width=420,height=800");
+    if (w) setTimeout(() => { try { w.postMessage(saleData, "*"); } catch(e){} }, 200);
+  }
+}
+
+// Unified print selector (keeps existing flow intact)
+function doPrint(saleData) {
+  if (window.__invoiceOnlyFlow) {
+    window.__invoiceOnlyFlow = false;       // reset flag for next time
+    return printInvoiceOnly(saleData);      // ✅ invoice-only route
+  }
+  return printInvoice(saleData);            // 🟢 existing KOT + invoice route
 }
 
 
@@ -765,37 +802,96 @@ loadData();
 
 // ------------------------ Upload Sales Start -------------------
 
+// Helper: safe JSON read
+function readJsonSafe(filePath, fallback) {
+  try {
+    if (!fs.existsSync(filePath)) return fallback;
+    const txt = fs.readFileSync(filePath, "utf-8");
+    if (!txt) return fallback;
+    return JSON.parse(txt);
+  } catch (e) {
+    console.error("readJsonSafe error:", e);
+    return fallback;
+  }
+}
+
+// Helper: numeric compare for invoice-like IDs (e.g., "REW-1005" -> 1005)
+function numericPart(id) {
+  if (!id || typeof id !== "string") return NaN;
+  const m = id.match(/(\d+)(?!.*\d)/); // last number in string
+  return m ? parseInt(m[1], 10) : NaN;
+}
+
+// Compute list of records to push based on lastPushedId
+function computePendingSales(allSales, lastPushedId) {
+  if (!Array.isArray(allSales) || allSales.length === 0) return [];
+
+  // 1) Try exact index match
+  if (lastPushedId) {
+    const idx = allSales.findIndex(s => s && s.id === lastPushedId);
+    if (idx >= 0) {
+      return allSales.slice(idx + 1);
+    }
+  }
+
+  // 2) Fallback to numeric comparison (prefix-agnostic, e.g., REW-1005)
+  if (lastPushedId) {
+    const lastNum = numericPart(lastPushedId);
+    if (!isNaN(lastNum)) {
+      return allSales.filter(s => {
+        const n = numericPart(s?.id || "");
+        return !isNaN(n) && n > lastNum;
+      });
+    }
+  }
+
+  // 3) If no lastPushedId or no match, push everything
+  return allSales;
+}
+
+// ==========================
+// Push only pending records
+// ==========================
 async function pushData(auto = false) {
   const statusEl = document.getElementById("status");
   statusEl.innerText = auto ? "Auto pushing data..." : "Pushing data...";
 
   try {
-    const configRaw = fs.readFileSync(configFile, "utf-8");
-    const config = JSON.parse(configRaw);
-
-    if (!config.PushUrl) {
+    // Load config
+    const config = readJsonSafe(configFile, {});
+    if (!config || !config.PushUrl) {
       throw new Error("PushUrl not found in config.json");
     }
+    const lastPushedId = config.lastPushedId || null;
 
-    if (!fs.existsSync(saleFile)) return;
+    // Load local sales
+    let allSales = readJsonSafe(saleFile, []);
+    if (!Array.isArray(allSales)) allSales = [allSales];
 
-    const rawData = fs.readFileSync(saleFile, "utf-8");
-    let saleData = JSON.parse(rawData);
+    // Filter for pending only (after lastPushedId)
+    const pending = computePendingSales(allSales, lastPushedId);
 
-    if (!Array.isArray(saleData)) {
-      saleData = [saleData];
+    if (!pending.length) {
+      statusEl.innerText = "✅ Nothing to push (already up-to-date).";
+      statusEl.classList.remove("text-danger");
+      statusEl.classList.add("text-success");
+      setTimeout(() => { statusEl.innerText = ""; statusEl.classList.remove("text-success"); }, 2500);
+      return;
     }
 
-    const transformedData = saleData.map(sale => ({
+    // Transform for API
+    const payload = pending.map(sale => ({
       sale: {
         id: sale.id,
         invoice_number: sale.id,
         token_no: "",
         year: new Date(sale.date).getFullYear(),
         customer_name: "Walk-in Customer",
-        date: sale.date
+        date: sale.date,
+        total: sale.total,
+        paymentMode: sale.paymentMode,
       },
-      sale_items: sale.items.map(item => ({
+      sale_items: (sale.items || []).map(item => ({
         item_id: item.id,
         variant_value_id: null,
         item_brand: "",
@@ -819,26 +915,40 @@ async function pushData(auto = false) {
       }))
     }));
 
-    const pushRes = await fetch(config.PushUrl, {  // Yii2 endpoint
+    // Push to server (Yii2)
+    const pushRes = await fetch(config.PushUrl, {
       method: "POST",
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${config.authKey}`   
+        ...(config.authKey ? { "Authorization": `Bearer ${config.authKey}` } : {})
       },
-      body: JSON.stringify(transformedData)
+      body: JSON.stringify(payload)
     });
 
-    const responseJson = await pushRes.json();
+    let responseJson = {};
+    try { responseJson = await pushRes.json(); } catch(e){}
 
     if (pushRes.ok && responseJson.status === "success") {
-      statusEl.innerText = (auto ? "✅ Auto Push Success!" : "✅ Sale data successfully pushed!") 
-        + " Last ID: " + responseJson.last_sale_id;
+      // Prefer server-reported last id, else take the last pending id
+      const serverLast = responseJson.last_sale_id;
+      const localLast = pending[pending.length - 1]?.id;
+      const newLast = serverLast || localLast || lastPushedId;
+
+      // Update config.json with lastPushedId (atomic-ish)
+      try {
+        const updatedConfig = { ...config, lastPushedId: newLast };
+        fs.writeFileSync(configFile, JSON.stringify(updatedConfig, null, 2), "utf-8");
+      } catch (e) {
+        console.error("Failed to update config.json lastPushedId:", e);
+      }
+
+      statusEl.innerText = (auto ? "✅ Auto Push Success!" : "✅ Sale data successfully pushed!")
+        + " Last ID: " + (newLast || "-");
       statusEl.classList.remove("text-danger");
       statusEl.classList.add("text-success");
-
     } else {
-      statusEl.innerText = (auto ? "❌ Auto Push Failed! " : "❌ Push Failed! ") 
-        + (responseJson.message || "Server rejected data");
+      const msg = responseJson.message || `Server rejected data (HTTP ${pushRes.status})`;
+      statusEl.innerText = (auto ? "❌ Auto Push Failed! " : "❌ Push Failed! ") + msg;
       statusEl.classList.remove("text-success");
       statusEl.classList.add("text-danger");
     }
@@ -850,23 +960,25 @@ async function pushData(auto = false) {
 
   } catch (err) {
     console.error("Push Error:", err);
+    const statusEl = document.getElementById("status");
     statusEl.innerText = "⚠️ Push Error: " + err.message;
     statusEl.classList.remove("text-success");
     statusEl.classList.add("text-danger");
   }
 }
 
+
+
+
+
 document.getElementById("pushDataBtn").addEventListener("click", () => pushData(false));
 
-setInterval(() => pushData(true), 10 * 60 * 1000);
+//setInterval(() => pushData(true), 10 * 60 * 1000);
 
 // setInterval(() => pushData(true), 10 * 1000);
 
 
 // ------------------------  Upload Sales End-------------------
-
-
-
 
 
 // ================== [ADDON] Inline Payment + Print Buttons + Shortcuts ==================
@@ -952,13 +1064,11 @@ function buildCurrentSaleDataInline(){
   };
 }
 
-// Print ONLY invoice via print.html (no KOT)
-function handlePrintOnly(){
+function handlePrintOnly() {
   if (!cart || cart.length === 0) { alert("Cart is empty!"); return; }
-  const saleData = buildCurrentSaleDataInline();
-  const w = window.open("print.html", "_blank", "width=420,height=800");
-  if (!w) { alert("Popup blocked"); return; }
-  setTimeout(() => { try { w.postMessage(saleData, "*"); } catch(e){} }, 200);
+ // alert('printing invoice only');
+  window.__invoiceOnlyFlow = true;  // ✅ batata hai ki is baar invoice-only chahiye
+  confirmPayment();                 // yahi saleData banayega + save karega + doPrint() call hoga
 }
 
 // Print with KOT using existing flow (main -> invoice.html)
@@ -1017,9 +1127,4 @@ function openPrintWindowWithData(saleData){
   setTimeout(() => { try { w.postMessage(saleData, '*'); } catch(e){} }, 200);
 }
 
-// Replace earlier handler with this reliable one (no other changes required)
-function handlePrintOnly(){
-  if (!cart || cart.length === 0) { alert('Cart is empty!'); return; }
-  const saleData = buildCurrentSaleDataInline ? buildCurrentSaleDataInline() : buildCurrentSaleData();
-  openPrintWindowWithData(saleData);
-}
+
