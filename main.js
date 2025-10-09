@@ -38,7 +38,14 @@ app.whenReady().then(() => {
 });
 
 // ✅ Handle login
-
+ipcMain.handle("check-login", (event, { user, pass }) => {
+  if (user === "admin" && pass === "1234") {
+    loginWindow.close();
+    createMainWindow();
+    return true;
+  }
+  return false;
+});
 
 // ---------------------------
 // IPC handler to read sales from JSON file
