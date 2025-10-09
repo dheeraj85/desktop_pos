@@ -1232,4 +1232,48 @@ document.addEventListener("keydown", (e) => {
 });
 
 // ✅ Make function available to HTML onclick
+
 window.login = login;
+
+
+function loadUserRole() {
+  const roleEl = document.getElementById("userRole");
+  if (!roleEl) return;
+
+  try {
+    if (fs.existsSync(userFile)) {
+      const data = JSON.parse(fs.readFileSync(userFile, "utf-8"));
+      const role = data?.user?.role || "User";
+
+      roleEl.textContent = role; // only role show
+      console.log("👤 Role:", role);
+    } else {
+      console.warn("⚠️ user.json not found — redirecting to login");
+      window.location.href = "login.html";
+    }
+  } catch (err) {
+    console.error("❌ Error loading user role:", err);
+    roleEl.textContent = "Unknown";
+  }
+}
+
+window.loadUserRole = loadUserRole;
+
+
+// ✅ Logout function
+function logout() {
+  try {
+    if (fs.existsSync(userFile)) {
+      fs.unlinkSync(userFile); // delete user.json
+      console.log("🗑️ user.json deleted successfully");
+    }
+  } catch (err) {
+    console.error("❌ Error deleting user.json:", err);
+  }
+
+  // Redirect to login page
+  window.location.href = "login.html";
+}
+
+window.logout = logout;
+

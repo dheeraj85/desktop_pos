@@ -46,11 +46,12 @@
         <li class="nav-item"><a href="#" class="nav-link" onclick="showPage('hold-page', event)"><i class="bi bi-hourglass-split"></i> Hold List</a></li>
         <li class="nav-item"><a href="#" class="nav-link" ><i class="bi bi-speedometer2" ></i> Dashboard</a></li>
        <li class="nav-item dropdown">
-  <a href="#" class="nav-link dropdown-toggle" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    <i class="bi bi-person-circle"></i> Admin
-  </a>
+<a href="#" class="nav-link dropdown-toggle" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+  <i class="bi bi-person-circle"></i> 
+  <span id="userRole">Loading...</span>
+</a>
   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-      <!-- <li><a class="dropdown-item" href="#" onclick="openSettings()"><i class="bi bi-gear"></i> Setting</a></li> -->
+
       <li><a class="dropdown-item" href="#" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
   </ul>
 </li>
@@ -59,6 +60,12 @@
     </div>
   </div>
 </nav>
+
+<script>
+  window.addEventListener("DOMContentLoaded", () => {
+    if (window.loadUserRole) window.loadUserRole();
+  });
+</script>
 <div id="status" class="p-2 text-success"></div>
 
 <!-- Item List Page -->
