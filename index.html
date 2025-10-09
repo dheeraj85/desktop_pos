@@ -457,13 +457,7 @@ function renderHoldOrders(){
   window.onload = () => showPage('pos-page');
   
 </script>
-<script>
 
-  // Attach logout globally
-  window.logout = function() {
-    ipcRenderer.invoke("logout");
-  }
-</script>
 <script>
 async function loadPrinterSettingsUI(){
 const printers = await ipcRenderer.invoke('printer:list');
