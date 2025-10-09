@@ -74,5 +74,293 @@
     "total": "140.00",
     "paymentMode": "Cash",
     "sale_prefix": "SS-"
+  },
+  {
+    "id": "HR-10001",
+    "date": "9/10/2025, 11:04:09 pm",
+    "items": [
+      {
+        "id": 5,
+        "name": "CHOCOLATE BROWNIE",
+        "price": 50,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 8,
+        "name": "PLAIN FINGER BAKLAVA",
+        "price": 1200,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 9,
+        "name": "ASSORTED BAKLAVA (325GM)",
+        "price": 590,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "1840.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
+  },
+  {
+    "id": "HR-10002",
+    "date": "9/10/2025, 11:04:21 pm",
+    "items": [
+      {
+        "id": 9,
+        "name": "ASSORTED BAKLAVA (325GM)",
+        "price": 590,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 14,
+        "name": "BAKLAWA",
+        "price": 1200,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "1790.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
+  },
+  {
+    "id": "HR-10003",
+    "date": "9/10/2025, 11:10:06 pm",
+    "items": [
+      {
+        "id": 4,
+        "name": "VEG CHEESE GARLIC BUN",
+        "price": 80,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 8,
+        "name": "PLAIN FINGER BAKLAVA",
+        "price": 1200,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "1280.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
+  },
+  {
+    "id": "HR-10004",
+    "date": "9/10/2025, 11:11:11 pm",
+    "items": [
+      {
+        "id": 5,
+        "name": "CHOCOLATE BROWNIE",
+        "price": 50,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 9,
+        "name": "ASSORTED BAKLAVA (325GM)",
+        "price": 590,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "640.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
+  },
+  {
+    "id": "HR-10005",
+    "date": "9/10/2025, 11:11:58 pm",
+    "items": [
+      {
+        "id": 9,
+        "name": "ASSORTED BAKLAVA (325GM)",
+        "price": 590,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 8,
+        "name": "PLAIN FINGER BAKLAVA",
+        "price": 1200,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "1790.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
+  },
+  {
+    "id": "HR-10006",
+    "date": "9/10/2025, 11:15:56 pm",
+    "items": [
+      {
+        "id": 3,
+        "name": "MAWA MUFFIN",
+        "price": 30,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 7,
+        "name": "PIZZA 7",
+        "price": 30,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "60.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
+  },
+  {
+    "id": "HR-10007",
+    "date": "9/10/2025, 11:16:23 pm",
+    "items": [
+      {
+        "id": 3,
+        "name": "MAWA MUFFIN",
+        "price": 30,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 4,
+        "name": "VEG CHEESE GARLIC BUN",
+        "price": 80,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "110.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
+  },
+  {
+    "id": "HR-10008",
+    "date": "9/10/2025, 11:16:30 pm",
+    "items": [
+      {
+        "id": 9,
+        "name": "ASSORTED BAKLAVA (325GM)",
+        "price": 590,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 14,
+        "name": "BAKLAWA",
+        "price": 1200,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 21,
+        "name": "CREAM DONUT",
+        "price": 30,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "1820.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
+  },
+  {
+    "id": "HR-10009",
+    "date": "9/10/2025, 11:16:49 pm",
+    "items": [
+      {
+        "id": 9,
+        "name": "ASSORTED BAKLAVA (325GM)",
+        "price": 590,
+        "qty": 0.25,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 8,
+        "name": "PLAIN FINGER BAKLAVA",
+        "price": 1200,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 12,
+        "name": "CASHEW FINGER BAKLAVA",
+        "price": 1300,
+        "qty": 2,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "3948.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
+  },
+  {
+    "id": "HR-10010",
+    "date": "9/10/2025, 11:17:13 pm",
+    "items": [
+      {
+        "id": 4,
+        "name": "VEG CHEESE GARLIC BUN",
+        "price": 80,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 8,
+        "name": "PLAIN FINGER BAKLAVA",
+        "price": 1200,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 12,
+        "name": "CASHEW FINGER BAKLAVA",
+        "price": 1300,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "2580.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
+  },
+  {
+    "id": "HR-10011",
+    "date": "9/10/2025, 11:18:33 pm",
+    "items": [
+      {
+        "id": 7,
+        "name": "PIZZA 7",
+        "price": 30,
+        "qty": 5,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 2,
+        "name": "BHAJI PAV",
+        "price": 45,
+        "qty": 1,
+        "rate_change_permission": 1
+      },
+      {
+        "id": 3,
+        "name": "MAWA MUFFIN",
+        "price": 30,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "225.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
   }
 ]

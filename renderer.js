@@ -1170,10 +1170,8 @@ function handlePrintOnly() {
     showMessage("🛒 Cart is empty!");
     return;
   }
-  window.__invoiceOnlyFlow = true;
-  confirmPayment();
-
-  
+  window.__invoiceOnlyFlow = true;  
+  confirmPayment();                 
 }
 
 // Print with KOT using existing flow (main -> invoice.html)
