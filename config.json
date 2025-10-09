@@ -1,9 +1,8 @@
 {
   "companyName": "HARIVIND",
-  "webhookUrl1": "https://sagargaire.com/demo/desktop-api",
-  "PushUrl1": " http://localhost/local_pos_online/users/receive",
-  "webhookUrl": "https://turrant.com/harivind_new/desktop-api",
-  "PushUrl": "https://turrant.com/harivind_new/desktop-api/receive",
-  "authKey": "Russel_anukool825",
-  "lastPushedId": "HR-1003"
+  "webhookUrl": "http://localhost/harivind/desktop-api",
+  "PushUrl": "http://localhost/harivindusers/receive",
+
+   "authKey": "Russel_anukool82555",
+  "lastPushedId": null
 }

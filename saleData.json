@@ -46,5 +46,113 @@
     "total": "30.00",
     "paymentMode": "Paytm",
     "sale_prefix": "HR-"
+  },
+  {
+    "id": "HR-1004",
+    "date": "9/10/2025, 6:10:38 pm",
+    "items": [
+      {
+        "id": 3,
+        "name": "MAWA MUFFIN",
+        "price": 30,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 4,
+        "name": "VEG CHEESE GARLIC BUN",
+        "price": 80,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "110.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
+  },
+  {
+    "id": "HR-1005",
+    "date": "9/10/2025, 6:59:45 pm",
+    "items": [
+      {
+        "id": 7,
+        "name": "PIZZA 7",
+        "price": 30,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 8,
+        "name": "PLAIN FINGER BAKLAVA",
+        "price": 1200,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "1230.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
+  },
+  {
+    "id": "HR-1006",
+    "date": "9/10/2025, 7:20:46 pm",
+    "items": [
+      {
+        "id": 3,
+        "name": "MAWA MUFFIN",
+        "price": 30,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 7,
+        "name": "PIZZA 7",
+        "price": 30,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "60.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
+  },
+  {
+    "id": "HR-1007",
+    "date": "9/10/2025, 7:21:27 pm",
+    "items": [
+      {
+        "id": 3,
+        "name": "MAWA MUFFIN",
+        "price": 30,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 4,
+        "name": "VEG CHEESE GARLIC BUN",
+        "price": 80,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "110.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
+  },
+  {
+    "id": "HR-1008",
+    "date": "9/10/2025, 7:35:33 pm",
+    "items": [
+      {
+        "id": 1092,
+        "name": "KAJU KATLI",
+        "price": 1100,
+        "qty": 1,
+        "rate_change_permission": 1
+      }
+    ],
+    "total": "1100.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
   }
 ]
