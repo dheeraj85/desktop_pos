@@ -1,0 +1,78 @@
+[
+  {
+    "id": "SS-10001",
+    "date": "9/10/2025, 10:08:19 pm",
+    "items": [
+      {
+        "id": 3,
+        "name": "MAWA MUFFIN",
+        "price": 30,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 4,
+        "name": "VEG CHEESE GARLIC BUN",
+        "price": 80,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "110.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10002",
+    "date": "9/10/2025, 10:09:35 pm",
+    "items": [
+      {
+        "id": 3,
+        "name": "MAWA MUFFIN",
+        "price": 30,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 4,
+        "name": "VEG CHEESE GARLIC BUN",
+        "price": 80,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "110.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10003",
+    "date": "9/10/2025, 10:11:14 pm",
+    "items": [
+      {
+        "id": 3,
+        "name": "MAWA MUFFIN",
+        "price": 30,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 4,
+        "name": "VEG CHEESE GARLIC BUN",
+        "price": 80,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 7,
+        "name": "PIZZA 7",
+        "price": 30,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "140.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  }
+]

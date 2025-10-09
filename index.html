@@ -70,6 +70,14 @@
 
 <!-- Item List Page -->
 <div id="item-page" class="container mt-3" style="display:none;">
+
+   <div class="d-flex justify-content-between align-items-center mb-2">
+    <h4>Company Details :  <div id="company-detail"></div></h4>
+    <button class="btn btn-sm btn-primary" onclick="ItemPage.syncCompanyDetails()">Sync Company Details</button>
+  </div>
+ 
+
+  <hr>
   <!-- Products Section -->
   <div class="d-flex justify-content-between align-items-center mb-2">
     <h4>Products</h4>
@@ -100,13 +108,7 @@
 
   <hr>
 
- <div class="d-flex justify-content-between align-items-center mb-2">
-    <h4>Company Details :  <div id="company-detail"></div></h4>
-    <button class="btn btn-sm btn-primary" onclick="ItemPage.syncCompanyDetails()">Sync Company Details</button>
-  </div>
- 
 
-  <hr>
 </div>
 
 </div>

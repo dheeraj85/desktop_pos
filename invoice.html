@@ -44,7 +44,9 @@
     const path = require("path");
 
     // ---- Read company.json safely ----
-    const companyPath = path.join(__dirname, "company.json");
+     const dataDir = path.join(__dirname, "data");
+  const companyPath = path.join(dataDir, "company.json");
+   
     let company = {};
     try {
       const data = fs.readFileSync(companyPath, "utf-8");

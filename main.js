@@ -1,9 +1,9 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const escpos = require('escpos');
-escpos.USB = require('escpos-usb');
-const usb = require('usb');
+// const escpos = require('escpos');
+// escpos.USB = require('escpos-usb');
+// const usb = require('usb');
 
 let loginWindow;
 let mainWindow;
@@ -50,7 +50,8 @@ ipcMain.handle("check-login", (event, { user, pass }) => {
 // ---------------------------
 // IPC handler to read sales from JSON file
 ipcMain.handle("get-sales", async () => {
-  const filePath = path.join(__dirname, "saleData.json");
+  const dataDir = path.join(__dirname, "data");
+  const filePath = path.join(dataDir, "saleData.json");
   
   try {
     if (!fs.existsSync(filePath)) {
