@@ -369,10 +369,27 @@ window.saveSettings = function() {
 
 // Hold current cart
 function holdOrder() {
-  if(cart.length === 0){
-    alert("Cart is empty!");
+    if (cart.length === 0) {
+    showMessage("🛒 Cart is empty!");
     return;
   }
+
+
+
+  function showMessage(msg) {
+  const alertBox = document.createElement("div");
+  alertBox.className = "alert alert-warning position-fixed top-0 start-50 translate-middle-x mt-3 shadow";
+  alertBox.style.zIndex = "2000";
+  alertBox.style.minWidth = "300px";
+  alertBox.innerHTML = msg;
+
+  document.body.appendChild(alertBox);
+
+  setTimeout(() => {
+    alertBox.classList.add("fade");
+    setTimeout(() => alertBox.remove(), 500);
+  }, 2000);
+}
 
   
   function logout() {
@@ -697,7 +714,7 @@ function removeItem(index) {
 
 function openPaymentModal() {
   if (cart.length === 0) {
-    alert("Cart is empty!");
+    showMessage("🛒 Cart is empty!");
     return;
   }
   let modal = new bootstrap.Modal(document.getElementById("paymentModal"));
@@ -1116,6 +1133,20 @@ function getCompanyForPrintInline() {
   return {};
 }
 
+ function showMessage(msg) {
+  const alertBox = document.createElement("div");
+  alertBox.className = "alert alert-warning position-fixed top-0 start-50 translate-middle-x mt-3 shadow";
+  alertBox.style.zIndex = "2000";
+  alertBox.style.minWidth = "300px";
+  alertBox.innerHTML = msg;
+
+  document.body.appendChild(alertBox);
+
+  setTimeout(() => {
+    alertBox.classList.add("fade");
+    setTimeout(() => alertBox.remove(), 500);
+  }, 2000);
+}
 function buildCurrentSaleDataInline(){
   const totalTxt = document.getElementById("total")?.innerText || "0";
   return {
@@ -1135,18 +1166,25 @@ function buildCurrentSaleDataInline(){
 }
 
 function handlePrintOnly() {
-  if (!cart || cart.length === 0) { alert("Cart is empty!"); return; }
- // alert('printing invoice only');
-  window.__invoiceOnlyFlow = true;  // ✅ batata hai ki is baar invoice-only chahiye
-  confirmPayment();                 // yahi saleData banayega + save karega + doPrint() call hoga
+  if (!cart || cart.length === 0) {
+    showMessage("🛒 Cart is empty!");
+    return;
+  }
+  window.__invoiceOnlyFlow = true;
+  confirmPayment();
+
+  
 }
 
 // Print with KOT using existing flow (main -> invoice.html)
-function handlePrintWithKot(){
-  if (!cart || cart.length === 0) { alert("Cart is empty!"); return; }
-  // We will reuse confirmPayment(), but make sure it reads inline radio if available.
+function handlePrintWithKot() {
+  if (!cart || cart.length === 0) {
+    showMessage("🛒 Cart is empty!");
+    return;
+  }
   confirmPayment();
 }
+
 
 // --- Patch confirmPayment to read inline radio without breaking anything ---
 (function patchConfirmPaymentToReadInline(){

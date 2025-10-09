@@ -74,5 +74,269 @@
     "total": "640.00",
     "paymentMode": "Cash",
     "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10002",
+    "date": "9/10/2025, 10:08:27 pm",
+    "items": [
+      {
+        "id": 1092,
+        "name": "KAJU KATLI",
+        "price": 1100,
+        "qty": 1,
+        "rate_change_permission": 1
+      }
+    ],
+    "total": "1100.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10003",
+    "date": "9/10/2025, 10:08:43 pm",
+    "items": [
+      {
+        "id": 1092,
+        "name": "KAJU KATLI",
+        "price": 1100,
+        "qty": 1,
+        "rate_change_permission": 1
+      },
+      {
+        "id": 2,
+        "name": "BHAJI PAV",
+        "price": 45,
+        "qty": 1,
+        "rate_change_permission": 1
+      }
+    ],
+    "total": "1145.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10004",
+    "date": "9/10/2025, 10:09:01 pm",
+    "items": [
+      {
+        "id": 1092,
+        "name": "KAJU KATLI",
+        "price": 1100,
+        "qty": 1,
+        "rate_change_permission": 1
+      },
+      {
+        "id": 2,
+        "name": "BHAJI PAV",
+        "price": 45,
+        "qty": 1,
+        "rate_change_permission": 1
+      }
+    ],
+    "total": "1145.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10005",
+    "date": "9/10/2025, 10:13:50 pm",
+    "items": [
+      {
+        "id": 1092,
+        "name": "KAJU KATLI",
+        "price": 1100,
+        "qty": 1,
+        "rate_change_permission": 1
+      }
+    ],
+    "total": "1100.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10006",
+    "date": "9/10/2025, 10:14:01 pm",
+    "items": [
+      {
+        "id": 207,
+        "name": "RAINBOW CAKE 750GM",
+        "price": 750,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "750.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10007",
+    "date": "9/10/2025, 10:14:08 pm",
+    "items": [
+      {
+        "id": 1092,
+        "name": "KAJU KATLI",
+        "price": 1100,
+        "qty": 1,
+        "rate_change_permission": 1
+      }
+    ],
+    "total": "1100.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10008",
+    "date": "9/10/2025, 10:16:43 pm",
+    "items": [
+      {
+        "id": 1092,
+        "name": "KAJU KATLI",
+        "price": 1100,
+        "qty": 1,
+        "rate_change_permission": 1
+      },
+      {
+        "id": 2,
+        "name": "BHAJI PAV",
+        "price": 45,
+        "qty": 1,
+        "rate_change_permission": 1
+      }
+    ],
+    "total": "1145.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10009",
+    "date": "9/10/2025, 10:16:54 pm",
+    "items": [
+      {
+        "id": 1092,
+        "name": "KAJU KATLI",
+        "price": 1100,
+        "qty": 1,
+        "rate_change_permission": 1
+      },
+      {
+        "id": 2,
+        "name": "BHAJI PAV",
+        "price": 45,
+        "qty": 1,
+        "rate_change_permission": 1
+      }
+    ],
+    "total": "1145.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10010",
+    "date": "9/10/2025, 10:20:05 pm",
+    "items": [
+      {
+        "id": 1092,
+        "name": "KAJU KATLI",
+        "price": 1100,
+        "qty": 1,
+        "rate_change_permission": 1
+      }
+    ],
+    "total": "1100.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10011",
+    "date": "9/10/2025, 10:21:28 pm",
+    "items": [
+      {
+        "id": 1092,
+        "name": "KAJU KATLI",
+        "price": 1100,
+        "qty": 1,
+        "rate_change_permission": 1
+      }
+    ],
+    "total": "1100.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10012",
+    "date": "9/10/2025, 10:59:55 pm",
+    "items": [
+      {
+        "id": 114,
+        "name": "COCA COLA CAN 300ML",
+        "price": 40,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "40.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10013",
+    "date": "9/10/2025, 11:01:23 pm",
+    "items": [
+      {
+        "id": 5,
+        "name": "CHOCOLATE BROWNIE",
+        "price": 50,
+        "qty": 4,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 9,
+        "name": "ASSORTED BAKLAVA (325GM)",
+        "price": 590,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "790.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10014",
+    "date": "9/10/2025, 11:01:30 pm",
+    "items": [
+      {
+        "id": 4,
+        "name": "VEG CHEESE GARLIC BUN",
+        "price": 80,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 5,
+        "name": "CHOCOLATE BROWNIE",
+        "price": 50,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 8,
+        "name": "PLAIN FINGER BAKLAVA",
+        "price": 1200,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 9,
+        "name": "ASSORTED BAKLAVA (325GM)",
+        "price": 590,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "1920.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
   }
 ]
