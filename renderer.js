@@ -3,6 +3,7 @@ const path = require("path");
 const saleFile = path.join(__dirname, "saleData.json");
 const holdFile = path.join(__dirname, "holdData.json");
 const configFile = path.join(__dirname, "config.json");
+const userFile = path.join(__dirname, "user.json");
 
 
 let products = [];
@@ -692,7 +693,7 @@ function confirmPayment() {
   }
 
   // 3) Determine last invoice number for THIS prefix only
-  let lastNum = 1000; // default start
+  let lastNum = 10000; // default start
   try {
     const nums = sales.map(s => {
       let id = (s && s.id) ? String(s.id) : "";
@@ -973,7 +974,7 @@ async function pushData(auto = false) {
 
 document.getElementById("pushDataBtn").addEventListener("click", () => pushData(false));
 
-//setInterval(() => pushData(true), 10 * 60 * 1000);
+setInterval(() => pushData(true), 10 * 60 * 1000);
 
 // setInterval(() => pushData(true), 10 * 1000);
 
@@ -1128,3 +1129,141 @@ function openPrintWindowWithData(saleData){
 }
 
 
+async function login() {
+  const user = document.getElementById("username").value.trim();
+  const pass = document.getElementById("password").value.trim();
+  const errorEl = document.getElementById("error");
+  const btn = document.querySelector(".btn-login");
+
+  errorEl.textContent = "";
+
+  if (!user || !pass) {
+    errorEl.textContent = "⚠️ Please enter both username and password.";
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Logging in...`;
+
+  try {
+    // ✅ Read config.json for API URL
+    const configPath = path.join(__dirname, "config.json");
+    let config = {};
+
+    if (fs.existsSync(configPath)) {
+      config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    } else {
+      errorEl.textContent = "⚠️ config.json not found!";
+      btn.disabled = false;
+      btn.innerHTML = "Login";
+      return;
+    }
+
+    if (!config.webhookUrl) {
+      errorEl.textContent = "⚠️ Webhook URL missing in config.json";
+      btn.disabled = false;
+      btn.innerHTML = "Login";
+      return;
+    }
+
+    console.log("🔗 Sending to:", `${config.webhookUrl}/users`);
+    const response = await fetch(`${config.webhookUrl}/users`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: user, password: pass }),
+    });
+
+    const text = await response.text();
+    console.log("🌐 Raw response:", text);
+
+    let data = {};
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      errorEl.textContent = "❌ Invalid JSON from server.";
+      btn.disabled = false;
+      btn.innerHTML = "Login";
+      return;
+    }
+
+    // ✅ Handle success or failure
+    if (data.success) {
+      const saveData = {
+        user: data.user || {},
+        cash_counter: data.cash_counter || {},
+      };
+
+      fs.writeFileSync(userFile, JSON.stringify(saveData, null, 2), "utf-8");
+      console.log("✅ User data saved:", saveData);
+
+      btn.innerHTML = "✅ Logged In!";
+      btn.classList.remove("btn-primary");
+      btn.classList.add("btn-success");
+      errorEl.textContent = "";
+
+      // ✅ Redirect to index page
+      setTimeout(() => {
+        window.location.href = "index.html";
+      }, 1000);
+    } else {
+      errorEl.textContent = data.message || "❌ Invalid credentials.";
+      btn.disabled = false;
+      btn.innerHTML = "Login";
+    }
+  } catch (err) {
+    console.error("🚨 Login error:", err);
+    errorEl.textContent = "❌ Something went wrong. Try again.";
+    btn.disabled = false;
+    btn.innerHTML = "Login";
+  }
+}
+
+// ✅ Enter key se login trigger
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") login();
+});
+
+// ✅ Make function available to HTML onclick
+window.login = login;
+
+
+function loadUserRole() {
+  const roleEl = document.getElementById("userRole");
+  if (!roleEl) return;
+
+  try {
+    if (fs.existsSync(userFile)) {
+      const data = JSON.parse(fs.readFileSync(userFile, "utf-8"));
+      const role = data?.user?.role || "User";
+
+      roleEl.textContent = role; // only role show
+      console.log("👤 Role:", role);
+    } else {
+      console.warn("⚠️ user.json not found — redirecting to login");
+      window.location.href = "login.html";
+    }
+  } catch (err) {
+    console.error("❌ Error loading user role:", err);
+    roleEl.textContent = "Unknown";
+  }
+}
+
+window.loadUserRole = loadUserRole;
+
+
+// ✅ Logout function
+function logout() {
+  try {
+    if (fs.existsSync(userFile)) {
+      fs.unlinkSync(userFile); // delete user.json
+      console.log("🗑️ user.json deleted successfully");
+    }
+  } catch (err) {
+    console.error("❌ Error deleting user.json:", err);
+  }
+
+  // Redirect to login page
+  window.location.href = "login.html";
+}
+
+window.logout = logout;

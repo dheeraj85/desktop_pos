@@ -143,7 +143,6 @@ return win.webContents.getPrinters();
 
 
 
-
 // IPC handler to print invoice ONLY (no KOT) using print.html
 ipcMain.handle("print-invoice-only", async (event, saleData) => {
   const win = new BrowserWindow({

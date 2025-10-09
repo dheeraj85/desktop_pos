@@ -1,20 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>KOT + Invoice (Separate Pages)</title>
+  <meta charset="UTF-8" />
+  <title>KOT + Invoice (Two Jobs with Cut)</title>
   <style>
     @media print {
-      @page {
-        size: 3in auto;
-        margin: 0;
-      }
+      @page { size: 3in auto; margin: 0; }
       body { margin: 0; padding: 0; }
-      .page-break {
-        page-break-after: always;
-      }
     }
-
     body {
       font-family: monospace;
       font-size: 14px;
@@ -22,7 +15,6 @@
       margin: 0 auto;
       padding: 0;
     }
-
     .center { text-align: center; font-weight: bold; }
     .right { text-align: right; }
     .left { text-align: left; }
@@ -34,24 +26,24 @@
     th { border-bottom: 1px dashed #000; font-size: 13px; }
 
     td.item { text-align: left; width: 45%; }
-    td.qty { text-align: right; width: 15%; }
+    td.qty  { text-align: right; width: 15%; }
     td.rate { text-align: right; width: 20%; }
-    td.amt { text-align: right; width: 20%; }
+    td.amt  { text-align: right; width: 20%; }
 
-    .kot-section, .bill-section {
-      margin-bottom: 10px;
-      page-break-inside: avoid;
-    }
+    /* add a slightly taller bottom margin so cutter clears content */
+    .slip-padding-end { height: 8mm; }
   </style>
 </head>
 <body>
-  <div id="invoice"></div>
+  <!-- We will swap this content between KOT and Invoice -->
+  <div id="print-root"></div>
 
   <script>
+    // Electron renderer context (Node enabled)
     const fs = require("fs");
     const path = require("path");
 
-    // ✅ Read company.json safely
+    // ---- Read company.json safely ----
     const companyPath = path.join(__dirname, "company.json");
     let company = {};
     try {
@@ -62,16 +54,27 @@
       console.error("❌ Error reading company.json:", err);
     }
 
-    window.addEventListener("message", (event) => {
-      const saleData = event.data;
-      if (!saleData || !saleData.items) return;
+    // ---- Helpers ----
+    const root = document.getElementById("print-root");
+    const fmt = (n) => (isNaN(+n) ? "0.00" : (+n).toFixed(2));
 
-      const date = new Date().toLocaleString();
-      const tokenNo = saleData.id ? saleData.id.replace(/\D/g, "") : Math.floor(Math.random() * 900 + 100);
-      const tableNo = saleData.table || "10";
+    // Optional: if you later add QZ-Tray, you can send a partial cut here.
+    // Keep it no-op for now so nothing breaks.
+    async function sendPartialCutIfAvailable() {
+      try {
+        // Example for QZ-Tray (requires proper setup & a printer config):
+        // if (window.qz?.websocket?.isActive()) {
+        //   const cfg = qz.configs.create("YOUR_PRINTER_NAME");
+        //   const data = [{ type: 'raw', format: 'hex', data: '1D5601' }]; // GS V 1 = partial cut
+        //   await qz.print(cfg, data);
+        // }
+      } catch (e) {
+        console.warn("Partial cut command skipped:", e);
+      }
+    }
 
+    function buildKOTHTML(saleData, dateStr, tokenNo, tableNo) {
       let kotHTML = `
-
         <div class="kot-slip">
           <div class="center">KOT - ${company.company_name || "Restaurant"}</div>
           <div class="small">Date: ${dateStr}</div>
@@ -90,53 +93,36 @@
       saleData.items.forEach(item => {
         kotHTML += `
           <tr>
-            <td class="item">${item.name}</td>
-            <td class="qty">${item.qty}</td>
+            <td class="item">${item.name || ""}</td>
+            <td class="qty">${fmt(item.qty || 0)}</td>
           </tr>`;
       });
 
       kotHTML += `
-          </tbody>
-        </table>
-        <hr>
-        <div class="center small">-- KOT Print --</div>
-      </div>
-      `;
-
-      // 💰 BILL SECTION
-      let billHTML = `
-      <div class="bill-section">
-        <table style="width:100%; text-align:center;">
-          <tr>
-            <td>
-              <b style="font-size:16px;">${company.company_name || "Company Name"}</b><br>
-              <label style="font-size:11px;">
-                ${company.company_address || ""}<br>
-                &#9742; ${company.contact_number || ""}<br>
-                GSTIN: ${company.company_gstin || "N/A"}
-              </label>
-            </td>
-          </tr>
-        </table>
-
-        <hr>
-        <div class="small">
-          <b>Date:</b> ${saleData.date || date}<br>
-          <b>Invoice:</b> ${saleData.id || "INV" + tokenNo}<br>
-          <b>Table:</b> ${tableNo} | <b>Token:</b> #${tokenNo}
+            </tbody>
+          </table>
+          <hr>
+        
+          <div class="slip-padding-end"></div>
         </div>
-        <hr>
+      `;
+      return kotHTML;
+    }
 
-        <table>
-          <thead>
+    function buildInvoiceHTML(saleData, dateStr, tokenNo, tableNo) {
+      let billHTML = `
+        <div class="bill-slip">
+          <table style="width:100%; text-align:center;">
             <tr>
-              <th class="left">Item</th>
-              <th class="qty">Qty</th>
-              <th class="rate">Rate</th>
-              <th class="amt">Amt</th>
+              <td>
+                <b style="font-size:16px;">${company.company_name || "Company Name"}</b><br>
+                <label style="font-size:11px;">
+                  ${company.company_address || ""}<br>
+                  &#9742; ${company.contact_number || ""}<br>
+                  GSTIN: ${company.company_gstin || "N/A"}
+                </label>
+              </td>
             </tr>
-          </thead>
-          <tbody>
           </table>
 
           <hr>
@@ -159,37 +145,82 @@
             <tbody>
       `;
 
+      let computedTotal = 0;
       saleData.items.forEach(item => {
-        const qty = parseFloat(item.qty).toFixed(2);
-        const rate = parseFloat(item.price).toFixed(2);
-        const amt = (item.qty * item.price).toFixed(2);
+        const qty  = +item.qty || 0;
+        const rate = +item.price || 0;
+        const amt  = qty * rate;
+        computedTotal += amt;
 
         billHTML += `
           <tr>
-            <td class="item">${item.name}</td>
-            <td class="qty">${qty}</td>
-            <td class="rate">${rate}</td>
-            <td class="amt">${amt}</td>
-          </tr>
-        `;
+            <td class="item">${item.name || ""}</td>
+            <td class="qty">${fmt(qty)}</td>
+            <td class="rate">${fmt(rate)}</td>
+            <td class="amt">${fmt(amt)}</td>
+          </tr>`;
       });
 
+      const finalTotal = saleData.total != null ? +saleData.total : computedTotal;
+
       billHTML += `
-          </tbody>
-        </table>
+            </tbody>
+          </table>
 
-        <hr>
-        <div class="right"><b>Total: ₹${parseFloat(saleData.total).toFixed(2)}</b></div>
-        <div class="center small">Payment Mode: ${saleData.paymentMode || "Cash"}</div>
-        <hr>
-        <div class="center">Thank You! Visit Again 🙏</div>
-      </div>
+          <hr>
+          <div class="right"><b>Total: ₹${fmt(finalTotal)}</b></div>
+          <div class="center small">Payment Mode: ${saleData.paymentMode || "Cash"}</div>
+          <hr>
+          <div class="center">Thank You! Visit Again 🙏</div>
+          <div class="slip-padding-end"></div>
+        </div>
       `;
+      return billHTML;
+    }
 
-      // ✅ Combine both sections
-      document.getElementById("invoice").innerHTML = kotHTML + billHTML;
+    // ---- Print Queue (KOT then Invoice) ----
+    let printQueue = [];    // array of HTML strings to print
+    let printingIdx = -1;   // which one we are printing
 
-      setTimeout(() => window.print(), 500);
+    function printNextInQueue() {
+      printingIdx++;
+      if (printingIdx >= printQueue.length) {
+        // done
+        return;
+      }
+      root.innerHTML = printQueue[printingIdx];
+      // Give layout a tick before print
+      setTimeout(() => window.print(), 50);
+    }
+
+    // After each print completes, either send an optional partial cut and continue,
+    // or finish if it was the last one.
+    window.addEventListener("afterprint", async () => {
+      // If there is another slip waiting, we can optionally send a partial cut first
+      if (printingIdx === 0 && printQueue.length > 1) {
+        await sendPartialCutIfAvailable(); // no-op unless you wire QZ-Tray
+      }
+      // Move on
+      setTimeout(printNextInQueue, 100);
+    });
+
+    // ---- Entry point: receive sale data and kick off two-print flow ----
+    window.addEventListener("message", (event) => {
+      const saleData = event.data;
+      if (!saleData || !Array.isArray(saleData.items)) return;
+
+      const now = new Date();
+      const dateStr = now.toLocaleString();
+      const tokenNo = saleData.id ? String(saleData.id).replace(/\D/g, "") : Math.floor(Math.random() * 900 + 100);
+      const tableNo = saleData.table || "10";
+
+      const kotHTML    = buildKOTHTML(saleData, dateStr, tokenNo, tableNo);
+      const invoiceHTML = buildInvoiceHTML(saleData, dateStr, tokenNo, tableNo);
+
+      // Queue: first KOT, then Invoice
+      printQueue = [kotHTML, invoiceHTML];
+      printingIdx = -1;
+      printNextInQueue();
     });
   </script>
 </body>
