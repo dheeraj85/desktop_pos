@@ -1,119 +1,78 @@
 [
   {
-    "id": "HR-1001",
-    "date": "8/10/2025, 1:01:38 pm",
+    "id": "10001",
+    "date": "9/10/2025, 7:40:46 pm",
     "items": [
-      {
-        "id": 125,
-        "name": "KINLEY WATER BOTTLE (10) 500 ML",
-        "price": 10,
-        "qty": 1,
-        "rate_change_permission": 0
-      }
-    ],
-    "total": "10.00",
-    "paymentMode": "Cash",
-    "sale_prefix": "HR-"
-  },
-  {
-    "id": "HR-1002",
-    "date": "8/10/2025, 1:09:17 pm",
-    "items": [
-      {
-        "id": 1092,
-        "name": "KAJU KATLI",
-        "price": 1080,
-        "qty": 0.009,
-        "rate_change_permission": 1
-      }
-    ],
-    "total": "10.00",
-    "paymentMode": "Cash",
-    "sale_prefix": "HR-"
-  },
-  {
-    "id": "HR-1003",
-    "date": "8/10/2025, 1:13:28 pm",
-    "items": [
-      {
-        "id": 21,
-        "name": "CREAM DONUT",
-        "price": 30,
-        "qty": 1,
-        "rate_change_permission": 0
-      }
-    ],
-    "total": "30.00",
-    "paymentMode": "Paytm",
-    "sale_prefix": "HR-"
-  },
-  {
-    "id": "HR-1004",
-    "date": "9/10/2025, 6:10:38 pm",
-    "items": [
-      {
-        "id": 3,
-        "name": "MAWA MUFFIN",
-        "price": 30,
-        "qty": 1,
-        "rate_change_permission": 0
-      },
       {
         "id": 4,
         "name": "VEG CHEESE GARLIC BUN",
         "price": 80,
         "qty": 1,
         "rate_change_permission": 0
-      }
-    ],
-    "total": "110.00",
-    "paymentMode": "Cash",
-    "sale_prefix": "HR-"
-  },
-  {
-    "id": "HR-1005",
-    "date": "9/10/2025, 6:59:45 pm",
-    "items": [
-      {
-        "id": 7,
-        "name": "PIZZA 7",
-        "price": 30,
-        "qty": 1,
-        "rate_change_permission": 0
       },
       {
-        "id": 8,
-        "name": "PLAIN FINGER BAKLAVA",
-        "price": 1200,
+        "id": 5,
+        "name": "CHOCOLATE BROWNIE",
+        "price": 50,
         "qty": 1,
         "rate_change_permission": 0
       }
     ],
-    "total": "1230.00",
-    "paymentMode": "Cash",
-    "sale_prefix": "HR-"
-  },
-  {
-    "id": "10001",
-    "date": "9/10/2025, 9:38:49 pm",
-    "items": [
-      {
-        "id": 1092,
-        "name": "KAJU KATLI",
-        "price": 1100,
-        "qty": 1,
-        "rate_change_permission": 1
-      },
-      {
-        "id": 2,
-        "name": "BHAJI PAV",
-        "price": 45,
-        "qty": 1,
-        "rate_change_permission": 1
-      }
-    ],
-    "total": "1145.00",
+    "total": "130.00",
     "paymentMode": "Cash",
     "sale_prefix": ""
+  },
+  {
+    "id": "RS-10001",
+    "date": "9/10/2025, 8:13:33 pm",
+    "items": [
+      {
+        "id": 4,
+        "name": "VEG CHEESE GARLIC BUN",
+        "price": 80,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 5,
+        "name": "CHOCOLATE BROWNIE",
+        "price": 50,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 9,
+        "name": "ASSORTED BAKLAVA (325GM)",
+        "price": 590,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "720.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "RS-"
+  },
+  {
+    "id": "SS-10001",
+    "date": "9/10/2025, 9:37:46 pm",
+    "items": [
+      {
+        "id": 5,
+        "name": "CHOCOLATE BROWNIE",
+        "price": 50,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 9,
+        "name": "ASSORTED BAKLAVA (325GM)",
+        "price": 590,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "640.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
   }
 ]

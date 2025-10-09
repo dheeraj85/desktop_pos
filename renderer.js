@@ -168,45 +168,97 @@ syncProducts: async function(){
     } catch(e){ console.error(e); alert("❌ Category sync failed"); }
   },
 
-syncCompanyDetails: async function(){
-  if(!this.config.webhookUrl || !this.config.authKey){ 
-    alert("Data server URL or AuthKey not configured!"); 
-    return; 
-  }
-
+syncCompanyDetails: async function() {
   try {
-    const res = await fetch(`${this.config.webhookUrl}/companydetail`, { // Yii2 endpoint
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${this.config.authKey}` 
-      }
+    // 1️⃣ Check config
+    if (!this.config.webhookUrl) {
+      alert("❌ Data server URL not configured!");
+      return;
+    }
+
+    // 2️⃣ Read user.json and extract comp_id
+    const userPath = path.join(__dirname, "user.json");
+    if (!fs.existsSync(userPath)) {
+      alert("❌ user.json not found!");
+      return;
+    }
+
+    const userRaw = fs.readFileSync(userPath, "utf8");
+    const userData = JSON.parse(userRaw);
+    const compId = userData?.user?.comp_id || null;
+
+    if (!compId) {
+      alert("❌ comp_id missing in user.json!");
+      return;
+    }
+
+    // 3️⃣ Prepare request headers (your new logic: Authorization = compId)
+    const headers = {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${compId}`
+    };
+
+    // 4️⃣ Call server (no body, as per your current change)
+    const res = await fetch(`${this.config.webhookUrl}/companydetail`, {
+      method: "POST",
+      headers
+      // body intentionally omitted per your latest change
     });
 
-    if(res.ok){
+    // 5️⃣ Handle response
+    if (res.ok) {
       let data = await res.json();
+      if (!Array.isArray(data)) data = [data];
 
-      if(!Array.isArray(data)) data = [data];
+      // Add fallback ids for local storage
+      data.forEach((d, i) => { if (!d.id) d.id = Date.now() + i; });
 
-      data.forEach((d,i)=>{ if(!d.id) d.id = Date.now() + i; });
-
-      fs.writeFileSync(this.companyFile, JSON.stringify(data,null,2));
-
+      // 6️⃣ Save company.json
+      fs.writeFileSync(this.companyFile, JSON.stringify(data, null, 2));
       this.company = data;
-
       this.renderCompany(this.company);
+
+      // 7️⃣ If response contains pos_access_key, update config.json -> authKey
+      const newKey =
+        (data.find(d => d && d.pos_access_key)?.pos_access_key) ||
+        data[0]?.pos_access_key || null;
+
+      if (newKey) {
+        try {
+          const configPath = path.join(__dirname, "config.json");
+          const currentCfg = fs.existsSync(configPath)
+            ? JSON.parse(fs.readFileSync(configPath, "utf8") || "{}")
+            : {};
+
+          currentCfg.authKey = newKey; // overwrite/set
+          // keep existing webhookUrl if present in memory
+          if (this.config?.webhookUrl && !currentCfg.webhookUrl) {
+            currentCfg.webhookUrl = this.config.webhookUrl;
+          }
+
+          fs.writeFileSync(configPath, JSON.stringify(currentCfg, null, 2));
+
+          // Update in-memory too
+          this.config.authKey = newKey;
+          console.log("🔑 authKey updated from pos_access_key");
+        } catch (err) {
+          console.error("Failed to update config.json authKey:", err);
+        }
+      } else {
+        console.warn("pos_access_key not found in response; authKey unchanged.");
+      }
 
       alert("✅ Company Detail Synced!");
     } else {
-      alert("❌ Failed to fetch company details from server");
+      const text = await res.text();
+      alert("❌ Failed to fetch company details: " + text);
     }
-  } catch(e){ 
-    console.error(e); 
-    alert("❌ Company sync failed"); 
+
+  } catch (e) {
+    console.error(e);
+    alert("❌ Company sync failed: " + e.message);
   }
 },
-
-
 
 
   syncPaymentModes: async function(){
@@ -863,6 +915,15 @@ async function pushData(auto = false) {
     if (!config || !config.PushUrl) {
       throw new Error("PushUrl not found in config.json");
     }
+    const userfile = readJsonSafe(userFile, {});
+    if (!userfile || !userfile.cash_counter.id) {
+      throw new Error("counter id not found in user.json");
+    }
+    if (!userfile || !userfile.user.id) {
+      throw new Error("user id not found in user.json");
+    }
+    const counterId = userfile.cash_counter.id;
+    const user_id = userfile.user.id;
     const lastPushedId = config.lastPushedId || null;
 
     // Load local sales
@@ -885,12 +946,14 @@ async function pushData(auto = false) {
       sale: {
         id: sale.id,
         invoice_number: sale.id,
-        token_no: "",
+        created_by: user_id,
         year: new Date(sale.date).getFullYear(),
         customer_name: "Walk-in Customer",
         date: sale.date,
         total: sale.total,
         paymentMode: sale.paymentMode,
+        cash_counter_id: counterId
+        
       },
       sale_items: (sale.items || []).map(item => ({
         item_id: item.id,
@@ -1129,6 +1192,51 @@ function openPrintWindowWithData(saleData){
 }
 
 
+// ==================Login  user ==================
+// Utilities for a full-screen loading overlay
+function ensureLoaderMount() {
+  if (document.getElementById("global-loader")) return;
+  const style = document.createElement("style");
+  style.id = "global-loader-style";
+  style.textContent = `
+  #global-loader {
+    position: fixed; inset: 0; z-index: 99999;
+    display: none; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.45); backdrop-filter: blur(2px);
+  }
+  #global-loader .box {
+    background: #111; color: #fff; padding: 16px 20px; border-radius: 10px;
+    font-size: 14px; display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  }
+  #global-loader .spinner {
+    width: 16px; height: 16px; border: 2px solid #fff; border-top-color: transparent;
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  `;
+  document.head.appendChild(style);
+
+  const wrap = document.createElement("div");
+  wrap.id = "global-loader";
+  wrap.innerHTML = `<div class="box"><div class="spinner"></div><span id="global-loader-text">Loading, please wait…</span></div>`;
+  document.body.appendChild(wrap);
+}
+
+function showLoader(text = "Loading, please wait…") {
+  ensureLoaderMount();
+  const el = document.getElementById("global-loader");
+  const txt = document.getElementById("global-loader-text");
+  if (txt) txt.textContent = text;
+  if (el) el.style.display = "flex";
+}
+
+function hideLoader() {
+  const el = document.getElementById("global-loader");
+  if (el) el.style.display = "none";
+}
+
+// ================== LOGIN ==================
 async function login() {
   const user = document.getElementById("username").value.trim();
   const pass = document.getElementById("password").value.trim();
@@ -1201,10 +1309,31 @@ async function login() {
       btn.classList.add("btn-success");
       errorEl.textContent = "";
 
-      // ✅ Redirect to index page
-      setTimeout(() => {
-        window.location.href = "index.html";
-      }, 1000);
+      // 🔽 NEW: Sync company details before redirect
+      showLoader("Syncing company details… Please wait");
+      try {
+        // If your method is on a global object (e.g., window.app), call that:
+        if (window.app && typeof window.app.syncCompanyDetails === "function") {
+          await window.app.syncCompanyDetails();
+        } else if (typeof syncCompanyDetails === "function") {
+          await syncCompanyDetails();
+        } else {
+          console.warn("syncCompanyDetails() not found – skipping.");
+        }
+      } catch (syncErr) {
+        console.error("❌ Company sync failed after login:", syncErr);
+        hideLoader();
+        errorEl.textContent = "❌ Company sync failed. Please try again.";
+        btn.disabled = false;
+        btn.innerHTML = "Login";
+        return; // stop here, don't redirect
+      }
+
+      hideLoader();
+
+      // ✅ Redirect to index page only after successful sync
+      window.location.href = "index.html";
+
     } else {
       errorEl.textContent = data.message || "❌ Invalid credentials.";
       btn.disabled = false;
@@ -1218,12 +1347,18 @@ async function login() {
   }
 }
 
+// ================== [END ADDON] login user==================
+
+
+
+
 // ✅ Enter key se login trigger
 document.addEventListener("keydown", (e) => {
   if (e.key === "Enter") login();
 });
 
 // ✅ Make function available to HTML onclick
+
 window.login = login;
 
 
@@ -1267,3 +1402,4 @@ function logout() {
 }
 
 window.logout = logout;
+
