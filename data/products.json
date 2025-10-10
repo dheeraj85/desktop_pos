@@ -1,5 +1,17 @@
 [
   {
+    "id": 1,
+    "name": "GIFT HAMPER",
+    "category": "HAMPER",
+    "price": "0.00",
+    "gst_percent": 5,
+    "item_code": "",
+    "category_id": 18,
+    "rate_change_permission": 0,
+    "mrp": "0.00",
+    "qty": null
+  },
+  {
     "id": 2,
     "name": "BHAJI PAV",
     "category": "BAKERY",
@@ -301,14 +313,14 @@
   },
   {
     "id": 36,
-    "name": "DARK CHOCO CHIPS COOKIES 225GM",
+    "name": "DARK CHOCO CHIPS COOKIES 160GM",
     "category": "BAKERY",
-    "price": "190.00",
+    "price": "140.00",
     "gst_percent": 5,
     "item_code": "1492",
     "category_id": 2,
-    "rate_change_permission": 0,
-    "mrp": "190.00",
+    "rate_change_permission": 1,
+    "mrp": "140.00",
     "qty": null
   },
   {
