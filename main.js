@@ -3,8 +3,8 @@ const path = require('path');
 const fs = require('fs');
 // const escpos = require('escpos');
 // escpos.USB = require('escpos-usb');
-// const usb = require('usb');
-
+const usb = require('usb');
+  const dataDir = path.join(__dirname, "data");
 let loginWindow;
 let mainWindow;
 
@@ -43,7 +43,7 @@ app.whenReady().then(() => {
 // ---------------------------
 // IPC handler to read sales from JSON file
 ipcMain.handle("get-sales", async () => {
-  const dataDir = path.join(__dirname, "data");
+
   const filePath = path.join(dataDir, "saleData.json");
   
   try {

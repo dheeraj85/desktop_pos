@@ -6,7 +6,7 @@ const dataDir = path.join(__dirname, "data");
 const configFile  = path.join(dataDir, "config.json");
 const companyFile = path.join(dataDir, "company.json");
 const userFile    = path.join(dataDir, "user.json");
-const saleFile    = path.join(dataDir, "sale.json");
+const saleFile    = path.join(dataDir, "saleData.json");
 
 
 
