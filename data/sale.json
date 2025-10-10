@@ -362,5 +362,42 @@
     "total": "225.00",
     "paymentMode": "Cash",
     "sale_prefix": "HR-"
+  },
+  {
+    "id": "HR-10012",
+    "date": "10/10/2025, 6:16:49 pm",
+    "items": [
+      {
+        "id": 2,
+        "name": "BHAJI PAV",
+        "price": 45,
+        "qty": 1,
+        "rate_change_permission": 1
+      },
+      {
+        "id": 3,
+        "name": "MAWA MUFFIN",
+        "price": 30,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 4,
+        "name": "VEG CHEESE GARLIC BUN",
+        "price": 80,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 5,
+        "name": "CHOCOLATE BROWNIE",
+        "price": 50,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "205.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "HR-"
   }
 ]
