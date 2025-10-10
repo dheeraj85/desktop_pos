@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 // const escpos = require('escpos');
 // escpos.USB = require('escpos-usb');
-const usb = require('usb');
+// const usb = require('usb');
   const dataDir = path.join(__dirname, "data");
 let loginWindow;
 let mainWindow;

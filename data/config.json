@@ -1,7 +1,7 @@
 {
   "companyName": "HARIVIND",
-  "webhookUrl": "http://localhost/harivind/desktop-api2",
-  "PushUrl": "http://localhost/harivind/desktop-api2/receive",
-  "authKey": "51dsfsdfdbsd",
-  "lastPushedId": null
+  "webhookUrl": "https://turrant.com/harivind_new/desktop-api2",
+  "PushUrl": "https://turrant.com/harivind_new/desktop-api2/receive",
+  "authKey": "RMP_anukool825",
+  "lastPushedId": "SS-10001"
 }
