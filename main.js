@@ -136,10 +136,10 @@ return next;
 
 
 // List printers for renderer
-ipcMain.handle('printer:list', (evt)=> {
-const win = BrowserWindow.fromWebContents(evt.sender);
-return win.webContents.getPrinters();
-});
+// ipcMain.handle('printer:list', (evt)=> {
+// const win = BrowserWindow.fromWebContents(evt.sender);
+// return win.webContents.getPrinters();
+// });
 });
 
 

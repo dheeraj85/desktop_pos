@@ -7,6 +7,7 @@ const configFile  = path.join(dataDir, "config.json");
 const companyFile = path.join(dataDir, "company.json");
 const userFile    = path.join(dataDir, "user.json");
 const saleFile    = path.join(dataDir, "saleData.json");
+const holdFile    = path.join(dataDir, "holdData.json");
 
 
 
@@ -491,29 +492,25 @@ function renderPaymentModes() {
 
 
 
-// Products rendering
 function loadProducts(list) {
-  let container = document.getElementById("product-list");
-  container.innerHTML = ""; // clear old
-
+  const container = document.getElementById("product-list");
   let html = "";
-
-list.forEach(p => { 
-
+  list.forEach(p => {
     html += `
       <div class="col-md-6 col-lg-3 mb-3">
-        <div class="card product-card h-100 d-flex flex-column align-items-center justify-content-center" onclick="addToCart(${p.id})" style="cursor:pointer; padding:10px;background-color:#204a87">
-         
-          <h6 class="text-center mb-2" style="font-weight:600;font-size:16px;color:#fff">${p.name} (${p.item_code}</h6>
+        <div class="card product-card h-100 d-flex flex-column align-items-center justify-content-center"
+             onclick="addToCart(${p.id}, true)"
+             style="cursor:pointer; padding:10px; background-color:#204a87">
+          <h6 class="text-center mb-2" style="font-weight:600;font-size:16px;color:#fff">
+            ${p.name} (${p.item_code})
+          </h6>
           <p class="fw-bold mb-0" style="color:#f5da55;font-size:16px">₹ ${p.price}</p>
         </div>
-      </div>
-    `;
+      </div>`;
   });
-
-  // ✅ Sirf ek hi baar DOM update
   container.innerHTML = html;
 }
+
 
 // Filtering
 function filterProducts() {
@@ -537,6 +534,40 @@ function filterProducts() {
 }
 
 
+// function handleSearchKey(e) {
+//   if (e.key === "Enter") {
+//     e.preventDefault();
+
+//     const search = document.getElementById("search-bar").value.toLowerCase().trim();
+//     const itemInput = document.getElementById("search-itemcode");
+//     const itemcode = itemInput.value.toLowerCase().trim();
+
+//     if (itemcode !== "") {
+//       const product = products.find(p => p.item_code.toLowerCase() === itemcode);
+//       if (product) {
+//         addToCart(product.id);
+//       } else {
+//         showToast(`❌ No product found with item code: ${itemcode}`);
+//       }
+
+//       itemInput.value = "";
+//       itemInput.focus();
+//       return; 
+//     }
+
+//     if (search !== "") {
+//       const product = products.find(p => p.name.toLowerCase().includes(search));
+//       if (product) {
+//         addToCart(product.id);
+//       } else {
+//         showToast(`❌ No product found with name: ${search}`);
+//       }
+//     }
+
+//     itemInput.focus();
+//   }
+// }
+
 function handleSearchKey(e) {
   if (e.key === "Enter") {
     e.preventDefault();
@@ -549,19 +580,60 @@ function handleSearchKey(e) {
       const product = products.find(p => p.item_code.toLowerCase() === itemcode);
       if (product) {
         addToCart(product.id);
+
+        // Wait a moment for cart to render, then focus qty box
+        setTimeout(() => {
+          const rows = document.querySelectorAll("#cart-items tr");
+          if (rows.length > 0) {
+            const lastRow = rows[rows.length - 1];
+            const qtyInput = lastRow.querySelector("input[type='number']");
+            if (qtyInput) {
+              qtyInput.focus();
+              qtyInput.select();
+
+              // When pressing Enter again in qty box → go back to itemcode input
+              qtyInput.addEventListener("keydown", function qtyEnterHandler(ev) {
+                if (ev.key === "Enter") {
+                  ev.preventDefault();
+                  itemInput.focus();
+                  qtyInput.removeEventListener("keydown", qtyEnterHandler);
+                }
+              });
+            }
+          }
+        }, 120);
       } else {
         showToast(`❌ No product found with item code: ${itemcode}`);
       }
 
       itemInput.value = "";
-      itemInput.focus();
-      return; 
+      return;
     }
 
     if (search !== "") {
       const product = products.find(p => p.name.toLowerCase().includes(search));
       if (product) {
         addToCart(product.id);
+
+        // Same logic for name search
+        setTimeout(() => {
+          const rows = document.querySelectorAll("#cart-items tr");
+          if (rows.length > 0) {
+            const lastRow = rows[rows.length - 1];
+            const qtyInput = lastRow.querySelector("input[type='number']");
+            if (qtyInput) {
+              qtyInput.focus();
+              qtyInput.select();
+              qtyInput.addEventListener("keydown", function qtyEnterHandler(ev) {
+                if (ev.key === "Enter") {
+                  ev.preventDefault();
+                  itemInput.focus();
+                  qtyInput.removeEventListener("keydown", qtyEnterHandler);
+                }
+              });
+            }
+          }
+        }, 120);
       } else {
         showToast(`❌ No product found with name: ${search}`);
       }
@@ -570,6 +642,100 @@ function handleSearchKey(e) {
     itemInput.focus();
   }
 }
+
+
+// Helper to focus qty of a specific row index
+function focusQtyRow(rowIndex) {
+  const rows = document.querySelectorAll("#cart-items tr");
+  if (!rows[rowIndex]) return;
+
+  const qtyInput = rows[rowIndex].querySelector('input[type="number"]');
+  if (!qtyInput) return;
+
+  qtyInput.focus();
+  qtyInput.select();
+
+  // Press Enter in qty -> back to itemcode box
+  const itemInput = document.getElementById("search-itemcode");
+  function qtyEnterHandler(ev) {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      itemInput && itemInput.focus();
+      qtyInput.removeEventListener("keydown", qtyEnterHandler);
+    }
+  }
+  qtyInput.addEventListener("keydown", qtyEnterHandler);
+}
+
+function loadProducts(list) {
+  const container = document.getElementById("product-list");
+  container.innerHTML = "";
+
+  let html = "";
+  list.forEach(p => {
+    html += `
+      <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card product-card h-100 d-flex flex-column align-items-center justify-content-center"
+             onclick="addToCart(${p.id}, true)" 
+             style="cursor:pointer; padding:10px;background-color:#204a87">
+          <h6 class="text-center mb-2" style="font-weight:600;font-size:16px;color:#fff">
+            ${p.name} (${p.item_code})
+          </h6>
+          <p class="fw-bold mb-0" style="color:#f5da55;font-size:16px">₹ ${p.price}</p>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+
+function renderCart() {
+  const tbody = document.getElementById("cart-items");
+  tbody.innerHTML = "";
+  let totalQty = 0, totalAmount = 0;
+
+  cart.forEach((c, i) => {
+    const subtotal = (c.qty || 0) * (c.price || 0);
+    totalQty += (c.qty || 0);
+    totalAmount += subtotal;
+
+    tbody.innerHTML += `
+      <tr>
+        <td>${c.name}</td>
+        <td>
+          <input id="qty-${c.id}" type="number" min="0" step="any" value="${c.qty || 0}"
+            onchange="updateQty(${i}, this.value)"
+            class="form-control form-control-sm" style="width:70px">
+        </td>
+        <td>
+          ${
+            (c.rate_change_permission == 1)
+              ? `<input type="text" value="${c.price}"
+                   onchange="updatePrice(${i}, this.value)"
+                   class="form-control form-control-sm" style="width:80px">`
+              : `₹${c.price}`
+          }
+        </td>
+        <td>₹${subtotal.toFixed(2)}</td>
+        <td>
+          <button class="btn btn-sm btn-danger" onclick="removeItem(${i})">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>
+      </tr>`;
+  });
+
+  if (cart.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No items added yet</td></tr>`;
+  }
+
+  document.getElementById("qty").innerText = Math.round(totalQty);
+  document.getElementById("total").innerText = Math.round(totalAmount);
+}
+
+// ========================
 
 // ✅ Non-blocking message
 function showToast(message) {
@@ -590,82 +756,6 @@ function showToast(message) {
 
   setTimeout(() => toast.remove(), 2000);
 }
-
-// Add to cart
-function addToCart(id) {
-  let product = products.find(p => String(p.id) === String(id));
-  if (!product) {
-    alert("Product not found for id: " + id);
-    return;
-  }
-
-  let existing = cart.find(c => String(c.id) === String(id));
-  if (existing) {
-    existing.qty++;
-  } else {
-    cart.push({
-      id: product.id,
-      name: product.name,
-      price: parseFloat(product.price),
-      qty: 1,
-      rate_change_permission: product.rate_change_permission 
-    });
-  }
-  renderCart();
-}
-
-
-function renderCart() {
-  let tbody = document.getElementById("cart-items");
-  tbody.innerHTML = "";
-  let totalQty = 0, totalAmount = 0;
-
-  cart.forEach((c, i) => {
-    let subtotal = (c.qty || 0) * (c.price || 0);
-    totalQty += (c.qty || 0);
-    totalAmount += subtotal;
-
-    tbody.innerHTML += `
-      <tr>
-        <td>${c.name}</td>
-        <td>
-          <input type="number" min="0" step="any" value="${c.qty || 0}" 
-            onchange="updateQty(${i},this.value)" 
-            class="form-control form-control-sm" style="width:70px">
-        </td>
-        <td>
-          ${
-            (c.rate_change_permission == 1)
-              ? `<input type="text" value="${c.price}" 
-                   onchange="updatePrice(${i}, this.value)" 
-                   class="form-control form-control-sm" style="width:80px">`
-              : `₹${c.price}`
-          }
-        </td>
-        <td>₹${subtotal.toFixed(2)}</td>
-        <td>
-          <button class="btn btn-sm btn-danger" onclick="removeItem(${i})">
-            <i class="bi bi-trash"></i>
-          </button>
-        </td>
-      </tr>`;
-  });
-
-  if (cart.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No items added yet</td></tr>`;
-  }
-
-  let finalQty = Math.round(totalQty);
-
-  let finalAmount = Math.round(totalAmount);
-
-  document.getElementById("qty").innerText = finalQty;
-  document.getElementById("total").innerText = finalAmount;
-}
-
-// ========================
-
-
 // Price Update Logic
 // ========================
 function updatePrice(index, value) {
@@ -720,6 +810,52 @@ function openPaymentModal() {
   let modal = new bootstrap.Modal(document.getElementById("paymentModal"));
   modal.show();
 }
+
+
+function addToCart(id, focusQty = false) {
+  const product = products.find(p => String(p.id) === String(id));
+  if (!product) {
+    alert("Product not found for id: " + id);
+    return;
+  }
+
+  let existing = cart.find(c => String(c.id) === String(id));
+  if (existing) {
+    existing.qty++;
+  } else {
+    cart.push({
+      id: product.id,
+      name: product.name,
+      price: parseFloat(product.price),
+      qty: 1,
+      rate_change_permission: product.rate_change_permission
+    });
+  }
+
+  renderCart();
+
+  if (focusQty) {
+    const qtyInput = document.getElementById(`qty-${product.id}`);
+    if (qtyInput) {
+      qtyInput.focus();
+      qtyInput.select();
+
+      // Enter in qty → back to itemcode
+      const itemInput = document.getElementById("search-itemcode");
+      const handler = (ev) => {
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+          itemInput && itemInput.focus();
+          qtyInput.removeEventListener("keydown", handler);
+        }
+      };
+      qtyInput.addEventListener("keydown", handler);
+    }
+  }
+}
+
+
+
 
 // Confirm payment (prefix-safe + robust save)
 function confirmPayment() {
