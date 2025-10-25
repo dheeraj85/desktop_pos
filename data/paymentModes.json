@@ -1,6 +1,1 @@
-[
-  { "id": "cash", "name": "Cash" },
-  { "id": "upi", "name": "UPI" },
-  { "id": "card", "name": "Card" },
-  { "id": "wallet", "name": "Wallet" }
-]
+[]

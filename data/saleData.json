@@ -1,8 +1,38 @@
 [
   {
     "id": "SS-10001",
-    "date": "10/10/2025, 12:42:22 pm",
+    "date": "10/10/2025, 6:54:48 pm",
     "items": [
+      {
+        "id": 3,
+        "name": "MAWA MUFFIN",
+        "price": 30,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 2,
+        "name": "BHAJI PAV",
+        "price": 45,
+        "qty": 1,
+        "rate_change_permission": 1
+      }
+    ],
+    "total": "75.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10002",
+    "date": "10/10/2025, 6:55:11 pm",
+    "items": [
+      {
+        "id": 2,
+        "name": "BHAJI PAV",
+        "price": 45,
+        "qty": 1,
+        "rate_change_permission": 1
+      },
       {
         "id": 3,
         "name": "MAWA MUFFIN",
@@ -11,7 +41,51 @@
         "rate_change_permission": 0
       }
     ],
-    "total": "30.00",
+    "total": "75.00",
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10003",
+    "date": "10/10/2025, 7:04:59 pm",
+    "items": [
+      {
+        "id": 9,
+        "name": "ASSORTED BAKLAVA (325GM)",
+        "price": 590,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 11,
+        "name": "CASHEW BAKLAVA TART",
+        "price": 1490,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 12,
+        "name": "CASHEW FINGER BAKLAVA",
+        "price": 1300,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 1,
+        "name": "GIFT HAMPER",
+        "price": 0,
+        "qty": 1,
+        "rate_change_permission": 0
+      },
+      {
+        "id": 3,
+        "name": "MAWA MUFFIN",
+        "price": 30,
+        "qty": 1,
+        "rate_change_permission": 0
+      }
+    ],
+    "total": "3410.00",
     "paymentMode": "Cash",
     "sale_prefix": "SS-"
   }
