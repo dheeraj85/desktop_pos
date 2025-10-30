@@ -857,14 +857,15 @@ function addToCart(id, focusQty = false) {
 
 
 
-// Confirm payment (prefix-safe + robust save)
-function confirmPayment() {
+
+// ✅ Confirm Payment Function
+async function confirmPayment() {
   const modeEl = document.querySelector('input[name="pmode"]:checked') || document.getElementById("payment-mode");
   const mode = modeEl ? (modeEl.value || modeEl.innerText || "Cash") : "Cash";
   const totalTxt = (document.getElementById("total")?.innerText || "0").toString().trim();
   const total = isNaN(+totalTxt) ? totalTxt : (+totalTxt).toFixed(2);
 
-  // 1) Read sale_prefix from company.json (supports array or object)
+  // 🔹 1) Read sale_prefix
   let salePrefix = "";
   try {
     const companyPath = path.join(dataDir, "company.json");
@@ -873,24 +874,20 @@ function confirmPayment() {
       if (raw) {
         const json = JSON.parse(raw);
         const companyObj = Array.isArray(json) ? json[0] : json;
-        if (companyObj && companyObj.sale_prefix) {
-          salePrefix = String(companyObj.sale_prefix).trim();
-        }
+        salePrefix = companyObj?.sale_prefix?.trim() || "";
       }
     }
-  } catch(err) {
+  } catch (err) {
     console.error("company.json read error:", err);
   }
 
-  // normalize prefix: ensure trailing '-' exactly once (if non-empty)
   if (salePrefix) {
     salePrefix = salePrefix.replace(/\s+/g, "");
     if (!salePrefix.endsWith("-")) salePrefix += "-";
-    // avoid "--"
     salePrefix = salePrefix.replace(/-+$/, "-");
   }
 
-  // 2) Load existing sales (robust)
+  // 🔹 2) Load existing sales
   let sales = [];
   try {
     if (fs.existsSync(saleFile)) {
@@ -903,23 +900,13 @@ function confirmPayment() {
     sales = [];
   }
 
-  // 3) Determine last invoice number for THIS prefix only
-  let lastNum = 10000; // default start
+  // 🔹 3) Determine invoice number
+  let lastNum = 10000;
   try {
     const nums = sales.map(s => {
       let id = (s && s.id) ? String(s.id) : "";
       if (!id) return null;
-
-      // Only consider IDs that match current prefix (or numeric only if no prefix set)
-      if (salePrefix) {
-        if (!id.startsWith(salePrefix)) return null;
-        id = id.slice(salePrefix.length); // strip prefix for parsing
-      } else {
-        // when no prefix, ignore IDs that are not pure numeric at the start
-        if (!/^\d+/.test(id)) return null;
-      }
-
-      // If legacy had "IN-" or anything non-numeric, drop it
+      if (salePrefix && id.startsWith(salePrefix)) id = id.slice(salePrefix.length);
       id = id.replace(/^IN-?/i, "");
       const num = parseInt(id, 10);
       return Number.isFinite(num) ? num : null;
@@ -930,50 +917,102 @@ function confirmPayment() {
     console.error("invoice parse error:", e);
   }
 
-  // 4) Generate next id WITHOUT "IN-"
-  const nextNumber = lastNum + 1;
-  const invoiceNo = salePrefix ? `${salePrefix}${nextNumber}` : `${nextNumber}`;
+  const invoiceNo = `${salePrefix}${lastNum + 1}`;
 
-  // 5) Build sale object
+  // 🔹 4) Build sale data
   const saleData = {
     id: invoiceNo,
     date: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
     items: Array.isArray(cart) ? cart : [],
-    total: total,
+    total,
     paymentMode: mode,
     sale_prefix: salePrefix
   };
 
-  // 6) Ensure directory exists, then save safely
+  // 🔹 5) Save sale
   try {
     const dir = path.dirname(saleFile);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  } catch (e) {
-    console.error("mkdir error:", e);
-  }
-
-  try {
     sales.push(saleData);
     fs.writeFileSync(saleFile, JSON.stringify(sales, null, 2), "utf8");
   } catch (e) {
     console.error("write sales error:", e);
     alert("Unable to save sale! Check file permissions/path.");
-    return; // don't proceed to print if save failed
+    return;
   }
 
-  // 7) Print invoice (existing flow)
-  try { doPrint(saleData); } catch(e){ console.error("printInvoice error:", e); }
+  // 🔹 6) Print invoice
+  try { doPrint(saleData); } catch (e) { console.error("printInvoice error:", e); }
 
-  // 8) Reset UI
+  // 🔹 7) Clear cart + close modal
   cart = [];
   renderCart();
-
-  // 9) Close modal if present (non-blocking)
   try {
     const modal = bootstrap.Modal.getInstance(document.getElementById("paymentModal"));
     if (modal) modal.hide();
   } catch (e) {}
+
+  // 🔹 8) Update Hold Status
+try {
+  if (lastHoldId && lastTokenNo) {
+    console.log("🟢 Updating hold status after sale:", {
+      token_no: lastTokenNo,
+      hold_id: lastHoldId
+    });
+
+    await updateHoldStatus(lastTokenNo, lastHoldId);
+  } else {
+    console.warn("⚠️ Hold details missing, skipping hold update");
+  }
+} catch (err) {
+  console.error("❌ Failed to update hold status:", err);
 }
+
+
+}
+
+
+async function updateHoldStatus(tokenNo, holdId) {
+  try {
+    // 🟢 API call
+    const response = await fetch("http://localhost/harivind/desktop-api2/updateholdstatus", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token_no: tokenNo,
+        hold_id: holdId,
+        is_running: 0 // ✅ Corrected spelling
+      })
+    });
+
+    // 🧩 Check if valid JSON response
+    const text = await response.text();
+    let result;
+    try {
+      result = JSON.parse(text);
+    } catch (err) {
+      console.error("❌ Invalid JSON from API:", text);
+      showMessage("⚠️ Server returned invalid response format!");
+      return;
+    }
+
+    console.log("✅ Hold status updated:", result);
+
+    // ✅ Handle response
+    if (result.status === "success") {
+      // showMessage("✅ Hold status updated successfully!");
+    } else {
+      showMessage(`⚠️ Hold update failed: ${result.message || "Unknown error"}`);
+    }
+
+  } catch (error) {
+    console.error("❌ Error updating hold status:", error);
+    showMessage("❌ Failed to update hold status!");
+  }
+}
+
+
+
 
 
 function printInvoice(saleData) {
@@ -1202,6 +1241,153 @@ setInterval(() => pushData(true), 10 * 60 * 1000);
 
 
 // ------------------------  Upload Sales End-------------------
+
+
+
+//---------------------TOKEN PULL--------------------/////////
+
+
+// 🔹 Auto Pull Tokens Every 5 Seconds
+let tokenAutoPullInterval = null;
+let currentHolds = [];
+
+// 🔹 Pull Tokens from API
+async function pullTokens(showLoader = true) {
+  const tokenContainer = document.getElementById("tokens");
+  if (showLoader)
+    tokenContainer.innerHTML =
+      "<p class='text-center text-muted'>Loading tokens...</p>";
+
+  try {
+    const response = await fetch(
+      "http://localhost/harivind/desktop-api2/tokenpull",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+
+    const result = await response.json();
+    console.log("🔹 Token Pull Result:", result);
+
+    if (result.status === "success" && Array.isArray(result.data)) {
+      currentHolds = result.data.map((h) => {
+        const total = h.items.reduce(
+          (sum, i) => sum + parseFloat(i.qty) * parseFloat(i.rate),
+          0
+        );
+        return {
+          id: h.hold.id,                
+    token_no: h.hold.token_no,    
+    date: h.hold.hold_date,
+    total: total.toFixed(2),
+    items: h.items.map((i) => ({
+      name: i.item_name,
+      qty: parseFloat(i.qty),
+      price: parseFloat(i.rate),
+      token_no: h.hold.token_no
+          })),
+        };
+      });
+    } else {
+      tokenContainer.innerHTML =
+        "<p class='text-center text-muted'>No active tokens found.</p>";
+      return;
+    }
+  } catch (error) {
+    console.error("❌ Error fetching from API:", error);
+    tokenContainer.innerHTML = `<p class='text-center text-danger'>Error loading tokens.</p>`;
+    return;
+  }
+
+  // 🔹 Inject CSS if not already
+  if (!document.getElementById("tokenStyle")) {
+    const style = document.createElement("style");
+    style.id = "tokenStyle";
+    style.textContent = `
+      .token-scroll {
+        overflow-x: auto;
+        white-space: nowrap;
+        padding: 6px 0;
+        margin-bottom: 8px;
+      }
+      .token-grid {
+        display: inline-flex;
+        gap: 6px;
+      }
+      .token-box {
+        background-color: #204a87;
+        color: #fff;
+        border-radius: 8px;
+        padding: 10px 16px;
+        text-align: center;
+        font-weight: 600;
+        cursor: pointer;
+        min-width: 90px;
+        transition: 0.2s;
+      }
+      .token-box:hover {
+        background-color: #0044aa;
+        transform: scale(1.05);
+      }
+      .token-text {
+        font-size: 14px;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // 🔹 Render Tokens (click → renderCart)
+ tokenContainer.innerHTML = `
+  <div class="token-scroll">
+    <div class="token-grid">
+      ${currentHolds
+        .map(
+          (hold) => `
+            <div class="token-box"
+              onclick="loadTokenToCart(${hold.id}); 
+                       lastHoldId = ${hold.id}; 
+                       lastTokenNo = '${hold.items[0]?.token_no || ''}';">
+              <span class="token-text">Token #${hold.id}</span>
+            </div>`
+        )
+        .join("")}
+    </div>
+  </div>`;
+
+}
+
+// 🔹 Token click → directly add to cart
+function loadTokenToCart(tokenId) {
+  const hold = currentHolds.find((h) => h.id === tokenId);
+  if (!hold) return;
+  cart = hold.items; // directly load items
+  renderCart();
+  // showMessage(`✅ Token #${tokenId} items added to bill`);
+}
+
+// 🔹 Auto Refresh Every 10 Seconds
+function startAutoPull() {
+  pullTokens(false);
+  if (tokenAutoPullInterval) clearInterval(tokenAutoPullInterval);
+  tokenAutoPullInterval = setInterval(() => pullTokens(false), 10000);
+}
+
+function stopAutoPull() {
+  if (tokenAutoPullInterval) clearInterval(tokenAutoPullInterval);
+}
+
+// ✅ Start Auto Pull when Page Loads
+document.addEventListener("DOMContentLoaded", startAutoPull);
+
+
+
+
+
+//---------------TOKEN PULL END ------------------//
+
+
+
 
 
 // ================== [ADDON] Inline Payment + Print Buttons + Shortcuts ==================
