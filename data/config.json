@@ -3,6 +3,5 @@
   "webhookUrl": "http://localhost/harivind/desktop-api2",
   "PushUrl": "http://localhost/harivind/desktop-api2/receive",
   "authKey": "51dsfsdfdbsd",
-  "lastPushedId": ""
-
+  "lastPushedId": "HV-10030"
 }
