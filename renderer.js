@@ -975,7 +975,7 @@ try {
 async function updateHoldStatus(tokenNo, holdId) {
   try {
     // 🟢 API call
-    const response = await fetch("http://localhost/harivind/desktop-api2/updateholdstatus", {
+    const response = await fetch("http://192.168.29.86/harivind/desktop-api2/updateholdstatus", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -1260,7 +1260,7 @@ async function pullTokens(showLoader = true) {
 
   try {
     const response = await fetch(
-      "http://localhost/harivind/desktop-api2/tokenpull",
+      "http://192.168.29.86/harivind/desktop-api2/tokenpull",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1348,7 +1348,7 @@ async function pullTokens(showLoader = true) {
               onclick="loadTokenToCart(${hold.id}); 
                        lastHoldId = ${hold.id}; 
                        lastTokenNo = '${hold.items[0]?.token_no || ''}';">
-              <span class="token-text">Token #${hold.id}</span>
+              <span class="token-text">Token #${hold.token_no}</span>
             </div>`
         )
         .join("")}
