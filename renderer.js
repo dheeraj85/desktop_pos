@@ -1275,9 +1275,32 @@ setInterval(() => pushData(true), 10 * 60 * 1000);
 //---------------------TOKEN PULL--------------------/////////
 
 
-// 🔹 Auto Pull Tokens Every 5 Seconds
+
+
 let tokenAutoPullInterval = null;
 let currentHolds = [];
+
+// 🔹 Show message on screen
+function showMessage(msg) {
+  const div = document.createElement("div");
+  div.className = "alert alert-info text-center py-1";
+  div.textContent = msg;
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 2000);
+}
+
+// 🔹 Manual Refresh Button Logic
+document.getElementById("refreshTokensBtn").addEventListener("click", async () => {
+  if (tokenAutoPullInterval) {
+    clearInterval(tokenAutoPullInterval);
+    tokenAutoPullInterval = null;
+    console.log("🛑 Auto Token Pull stopped!");
+  }
+
+  console.log("🔄 Manual Token Pull started...");
+  await pullTokens(true);
+  // showMessage("🔁 Tokens manually refreshed!");
+});
 
 // 🔹 Pull Tokens from API
 async function pullTokens(showLoader = true) {
@@ -1350,7 +1373,7 @@ async function pullTokens(showLoader = true) {
     return;
   }
 
-  // 🔹 Inject CSS if not already
+  // 🔹 Inject CSS if not already added
   if (!document.getElementById("tokenStyle")) {
     const style = document.createElement("style");
     style.id = "tokenStyle";
@@ -1387,7 +1410,7 @@ async function pullTokens(showLoader = true) {
     document.head.appendChild(style);
   }
 
-  // 🔹 Render Tokens (click → renderCart)
+  // 🔹 Render Tokens
   tokenContainer.innerHTML = `
     <div class="token-scroll">
       <div class="token-grid">
@@ -1417,18 +1440,11 @@ function loadTokenToCart(tokenId) {
 }
 
 // 🔹 Auto Refresh Every 10 Seconds
-function startAutoPull() {
-  pullTokens(false);
-  if (tokenAutoPullInterval) clearInterval(tokenAutoPullInterval);
-  tokenAutoPullInterval = setInterval(() => pullTokens(false), 10000);
-}
 
-function stopAutoPull() {
-  if (tokenAutoPullInterval) clearInterval(tokenAutoPullInterval);
-}
+
+
 
 // ✅ Start Auto Pull when Page Loads
-document.addEventListener("DOMContentLoaded", startAutoPull);
 
 
 
