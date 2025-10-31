@@ -974,33 +974,61 @@ try {
 
 async function updateHoldStatus(tokenNo, holdId) {
   try {
+    // 🔹 Load config.json path
+    const configPath = path.join(dataDir, "config.json");
+
+    // 🔹 Check if config.json exists
+    if (!fs.existsSync(configPath)) {
+      alert("❌ config.json not found!");
+      return;
+    }
+
+    // 🔹 Read and parse config
+    const configData = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    const webhookUrl = configData?.webhookUrl?.trim();
+
+    // 🔹 Validate webhook URL
+    if (!webhookUrl) {
+      alert("⚠️ Missing 'webhookUrl' in config.json");
+      return;
+    }
+
+    // 🔹 Validate input
+    if (!tokenNo || !holdId) {
+      console.warn("⚠️ Missing tokenNo or holdId:", { tokenNo, holdId });
+      return;
+    }
+
     // 🟢 API call
-    const response = await fetch("http://192.168.29.86/harivind/desktop-api2/updateholdstatus", {
+
+    const response = await fetch(`${webhookUrl}/updateholdstatus`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         token_no: tokenNo,
         hold_id: holdId,
-        is_running: 0 // ✅ Corrected spelling
-      })
+        is_running: 0, // ✅ Correct spelling and consistent
+      }),
     });
 
-    // 🧩 Check if valid JSON response
+    // 🧩 Handle plain text response first (some PHP APIs return non-JSON)
     const text = await response.text();
+
     let result;
     try {
       result = JSON.parse(text);
-    } catch (err) {
+    } catch {
       console.error("❌ Invalid JSON from API:", text);
-      showMessage("⚠️ Server returned invalid response format!");
+      showMessage("⚠️ Server returned invalid JSON format!");
       return;
     }
 
+    // ✅ Log success
     console.log("✅ Hold status updated:", result);
 
     // ✅ Handle response
     if (result.status === "success") {
-      // showMessage("✅ Hold status updated successfully!");
+      console.log(`🟢 Token #${tokenNo} (Hold ID: ${holdId}) updated successfully`);
     } else {
       showMessage(`⚠️ Hold update failed: ${result.message || "Unknown error"}`);
     }
@@ -1010,6 +1038,7 @@ async function updateHoldStatus(tokenNo, holdId) {
     showMessage("❌ Failed to update hold status!");
   }
 }
+
 
 
 
@@ -1259,13 +1288,37 @@ async function pullTokens(showLoader = true) {
       "<p class='text-center text-muted'>Loading tokens...</p>";
 
   try {
-    const response = await fetch(
-      "http://192.168.29.86/harivind/desktop-api2/tokenpull",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+
+    const userFile = path.join(dataDir, "user.json");
+    const configPath = path.join(dataDir, "config.json");
+
+    // 🔹 Check if config.json exists
+    if (!fs.existsSync(configPath)) {
+      alert("❌ config.json not found!");
+      return;
+    }
+
+    // 🔹 Load config.json
+    const configData = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    const webhookUrl = configData.webhookUrl;
+
+    // 🔹 Check if webhookUrl exists
+    if (!webhookUrl) {
+      alert("⚠️ webhookUrl missing in config.json");
+      return;
+    }
+
+    // 🔹 Load user.json
+    const userData = JSON.parse(fs.readFileSync(userFile, "utf-8"));
+    const compId = userData?.user?.comp_id;
+
+    // 🔹 Fetch from API
+    const response = await fetch(`${webhookUrl}/tokenpull`, {
+            method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comp_id: compId }) // ✅ Send company ID
+    });
+
 
     const result = await response.json();
     console.log("🔹 Token Pull Result:", result);
@@ -1277,16 +1330,16 @@ async function pullTokens(showLoader = true) {
           0
         );
         return {
-          id: h.hold.id,                
-    token_no: h.hold.token_no,    
-    date: h.hold.hold_date,
-    total: total.toFixed(2),
-    items: h.items.map((i) => ({
-      name: i.item_name,
-      qty: parseFloat(i.qty),
-      price: parseFloat(i.rate),
-      token_no: h.hold.token_no
-          })),
+          id: h.hold.id,
+          token_no: h.hold.token_no,
+          date: h.hold.hold_date,
+          total: total.toFixed(2),
+          items: h.items.map((i) => ({
+            name: i.item_name,
+            qty: parseFloat(i.qty),
+            price: parseFloat(i.rate),
+            token_no: h.hold.token_no
+          }))
         };
       });
     } else {
@@ -1338,24 +1391,26 @@ async function pullTokens(showLoader = true) {
   }
 
   // 🔹 Render Tokens (click → renderCart)
- tokenContainer.innerHTML = `
-  <div class="token-scroll">
-    <div class="token-grid">
-      ${currentHolds
-        .map(
-          (hold) => `
-            <div class="token-box"
-              onclick="loadTokenToCart(${hold.id}); 
-                       lastHoldId = ${hold.id}; 
-                       lastTokenNo = '${hold.items[0]?.token_no || ''}';">
-              <span class="token-text">Token #${hold.token_no}</span>
-            </div>`
-        )
-        .join("")}
-    </div>
-  </div>`;
+
+  tokenContainer.innerHTML = `
+    <div class="token-scroll">
+      <div class="token-grid">
+        ${currentHolds
+          .map(
+            (hold) => `
+              <div class="token-box"
+                onclick="loadTokenToCart(${hold.id}); 
+                         lastHoldId = ${hold.id}; 
+                         lastTokenNo = '${hold.items[0]?.token_no || ''}';">
+                <span class="token-text">Token #${hold.token_no}</span>
+              </div>`
+          )
+          .join("")}
+      </div>
+    </div>`;
 
 }
+
 
 // 🔹 Token click → directly add to cart
 function loadTokenToCart(tokenId) {
