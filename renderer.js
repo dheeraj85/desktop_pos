@@ -1000,6 +1000,7 @@ async function updateHoldStatus(tokenNo, holdId) {
     }
 
     // 🟢 API call
+
     const response = await fetch(`${webhookUrl}/updateholdstatus`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1310,6 +1311,7 @@ async function pullTokens(showLoader = true) {
       "<p class='text-center text-muted'>Loading tokens...</p>";
 
   try {
+
     const userFile = path.join(dataDir, "user.json");
     const configPath = path.join(dataDir, "config.json");
 
@@ -1335,10 +1337,11 @@ async function pullTokens(showLoader = true) {
 
     // 🔹 Fetch from API
     const response = await fetch(`${webhookUrl}/tokenpull`, {
-      method: "POST",
+            method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ comp_id: compId }) // ✅ Send company ID
     });
+
 
     const result = await response.json();
     console.log("🔹 Token Pull Result:", result);
@@ -1411,6 +1414,8 @@ async function pullTokens(showLoader = true) {
   }
 
   // 🔹 Render Tokens
+  // 🔹 Render Tokens (click → renderCart)
+
   tokenContainer.innerHTML = `
     <div class="token-scroll">
       <div class="token-grid">
@@ -1427,6 +1432,7 @@ async function pullTokens(showLoader = true) {
           .join("")}
       </div>
     </div>`;
+
 }
 
 
