@@ -3,13 +3,6 @@
   "webhookUrl": "http://192.168.29.86/harivind/desktop-api2",
   "PushUrl": "http://192.168.29.86/harivind/desktop-api2/receive",
   "authKey": "51dsfsdfdbsd",
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
   "lastPushedId": "HV-10030"
-=======
-  "lastPushedId": "HV-10023"
->>>>>>> Stashed changes
-=======
-  "lastPushedId": "HV-10023"
->>>>>>> Stashed changes
+
 }
