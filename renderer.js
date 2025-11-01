@@ -174,7 +174,102 @@ syncProducts: async function(){
     } catch(e){ console.error(e); alert("❌ Category sync failed"); }
   },
 
-syncCompanyDetails: async function() {
+// syncCompanyDetails: async function() {
+//   try {
+//     // 1️⃣ Check config
+//     if (!this.config.webhookUrl) {
+//       alert("❌ Data server URL not configured!");
+//       return;
+//     }
+
+//     // 2️⃣ Read user.json and extract comp_id
+    
+//     const userPath = path.join(dataDir, "user.json");
+//     if (!fs.existsSync(userPath)) {
+//       alert("❌ user.json not found!");
+//       return;
+//     }
+
+//     const userRaw = fs.readFileSync(userPath, "utf8");
+//     const userData = JSON.parse(userRaw);
+//     const compId = userData?.user?.comp_id || null;
+
+//     if (!compId) {
+//       alert("❌ comp_id missing in user.json!");
+//       return;
+//     }
+
+//     // 3️⃣ Prepare request headers (your new logic: Authorization = compId)
+//     const headers = {
+//       "Content-Type": "application/json",
+//       "Authorization": `Bearer ${compId}`
+//     };
+
+//     // 4️⃣ Call server (no body, as per your current change)
+//     const res = await fetch(`${this.config.webhookUrl}/companydetail`, {
+//       method: "POST",
+//       headers
+//       // body intentionally omitted per your latest change
+//     });
+
+//     // 5️⃣ Handle response
+//     if (res.ok) {
+//       let data = await res.json();
+//       if (!Array.isArray(data)) data = [data];
+
+//       // Add fallback ids for local storage
+//       data.forEach((d, i) => { if (!d.id) d.id = Date.now() + i; });
+
+//       // 6️⃣ Save company.json
+//       fs.writeFileSync(this.companyFile, JSON.stringify(data, null, 2));
+//       this.company = data;
+//       this.renderCompany(this.company);
+
+//       // 7️⃣ If response contains pos_access_key, update config.json -> authKey
+//       const newKey =
+//         (data.find(d => d && d.pos_access_key)?.pos_access_key) ||
+//         data[0]?.pos_access_key || null;
+
+//       if (newKey) {
+//         try {
+//           const configPath = path.join(dataDir, "config.json");
+//           const currentCfg = fs.existsSync(configPath)
+//             ? JSON.parse(fs.readFileSync(configPath, "utf8") || "{}")
+//             : {};
+
+//           currentCfg.authKey = newKey; // overwrite/set
+//           // keep existing webhookUrl if present in memory
+//           if (this.config?.webhookUrl && !currentCfg.webhookUrl) {
+//             currentCfg.webhookUrl = this.config.webhookUrl;
+//           }
+
+//           fs.writeFileSync(configPath, JSON.stringify(currentCfg, null, 2));
+
+//           // Update in-memory too
+//           this.config.authKey = newKey;
+//           console.log("🔑 authKey updated from pos_access_key");
+//         } catch (err) {
+//           console.error("Failed to update config.json authKey:", err);
+//         }
+//       } else {
+//         console.warn("pos_access_key not found in response; authKey unchanged.");
+//       }
+
+//       alert("✅ Company Detail Synced!");
+//     } else {
+//       const text = await res.text();
+//       alert("❌ Failed to fetch company details: " + text);
+//     }
+
+//   } catch (e) {
+//     console.error(e);
+//     alert("❌ Company sync failed: " + e.message);
+//   }
+  // },
+  
+
+
+  syncCompanyDetails: async function () {
   try {
     // 1️⃣ Check config
     if (!this.config.webhookUrl) {
@@ -183,7 +278,6 @@ syncCompanyDetails: async function() {
     }
 
     // 2️⃣ Read user.json and extract comp_id
-    
     const userPath = path.join(dataDir, "user.json");
     if (!fs.existsSync(userPath)) {
       alert("❌ user.json not found!");
@@ -199,17 +293,17 @@ syncCompanyDetails: async function() {
       return;
     }
 
-    // 3️⃣ Prepare request headers (your new logic: Authorization = compId)
+    // 3️⃣ Prepare request headers (Authorization = Bearer compId)
     const headers = {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${compId}`
     };
 
-    // 4️⃣ Call server (no body, as per your current change)
+    // 4️⃣ Call server API
     const res = await fetch(`${this.config.webhookUrl}/companydetail`, {
       method: "POST",
       headers
-      // body intentionally omitted per your latest change
+      // body omitted as per new change
     });
 
     // 5️⃣ Handle response
@@ -217,15 +311,43 @@ syncCompanyDetails: async function() {
       let data = await res.json();
       if (!Array.isArray(data)) data = [data];
 
-      // Add fallback ids for local storage
-      data.forEach((d, i) => { if (!d.id) d.id = Date.now() + i; });
-
       // 6️⃣ Save company.json
       fs.writeFileSync(this.companyFile, JSON.stringify(data, null, 2));
       this.company = data;
       this.renderCompany(this.company);
 
-      // 7️⃣ If response contains pos_access_key, update config.json -> authKey
+      // 🧠 NEW: If saleFile is empty, save lastPushedId from backend
+      const salePath = path.join(dataDir, "saleData.json");
+      const configPath = path.join(dataDir, "config.json");
+
+      let saleEmpty = true;
+      if (fs.existsSync(salePath)) {
+        const saleRaw = fs.readFileSync(salePath, "utf8").trim();
+        saleEmpty = !saleRaw || saleRaw === "[]" || saleRaw === "{}";
+      }
+
+      if (saleEmpty) {
+        try {
+          const lastInvoice = data[0]?.last_invoice_number || null;
+
+          if (lastInvoice) {
+            const configData = fs.existsSync(configPath)
+              ? JSON.parse(fs.readFileSync(configPath, "utf8") || "{}")
+              : {};
+
+            configData.lastPushedId = lastInvoice;
+
+            fs.writeFileSync(configPath, JSON.stringify(configData, null, 2));
+            console.log("🧾 lastPushedId updated:", lastInvoice);
+          } else {
+            console.warn("⚠️ No last_invoice_number received from server.");
+          }
+        } catch (err) {
+          console.error("❌ Failed to update lastPushedId:", err);
+        }
+      }
+
+      // 7️⃣ Update authKey if found
       const newKey =
         (data.find(d => d && d.pos_access_key)?.pos_access_key) ||
         data[0]?.pos_access_key || null;
@@ -237,15 +359,12 @@ syncCompanyDetails: async function() {
             ? JSON.parse(fs.readFileSync(configPath, "utf8") || "{}")
             : {};
 
-          currentCfg.authKey = newKey; // overwrite/set
-          // keep existing webhookUrl if present in memory
+          currentCfg.authKey = newKey;
           if (this.config?.webhookUrl && !currentCfg.webhookUrl) {
             currentCfg.webhookUrl = this.config.webhookUrl;
           }
 
           fs.writeFileSync(configPath, JSON.stringify(currentCfg, null, 2));
-
-          // Update in-memory too
           this.config.authKey = newKey;
           console.log("🔑 authKey updated from pos_access_key");
         } catch (err) {
@@ -260,7 +379,6 @@ syncCompanyDetails: async function() {
       const text = await res.text();
       alert("❌ Failed to fetch company details: " + text);
     }
-
   } catch (e) {
     console.error(e);
     alert("❌ Company sync failed: " + e.message);
