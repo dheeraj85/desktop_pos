@@ -915,10 +915,30 @@ function updateQty(index, value) {
 // ========================
 
 // Remove item
+// function removeItem(index) {
+//   cart.splice(index, 1);
+//   renderCart();
+// }
+
 function removeItem(index) {
+  const removedItem = cart[index];
   cart.splice(index, 1);
   renderCart();
+
+  // Check if that token has any items left in cart
+  const stillHasItems = cart.some(c => c.token_no === removedItem.token_no);
+  if (!stillHasItems) {
+    const hold = currentHolds.find(h => h.items[0].token_no === removedItem.token_no);
+    if (hold) {
+      const tokenBox = document.getElementById(`token-${hold.id}`);
+      if (tokenBox) {
+        tokenBox.style.backgroundColor = "#204a87"; // reset color
+      }
+      selectedTokens.delete(hold.id); // remove from selected list
+    }
+  }
 }
+
 
 function openPaymentModal() {
   if (cart.length === 0) {
@@ -1071,91 +1091,89 @@ async function confirmPayment() {
   } catch (e) {}
 
   // 🔹 8) Update Hold Status
-try {
-  if (lastHoldId && lastTokenNo) {
-    console.log("🟢 Updating hold status after sale:", {
-      token_no: lastTokenNo,
-      hold_id: lastHoldId
+ try {
+    await updateSelectedHolds();
+  } catch (err) {
+    console.error("❌ Failed to update hold status:", err);
+  }
+
+}
+
+
+async function updateSelectedHolds() {
+  if (!selectedTokens || selectedTokens.size === 0) {
+    console.warn("⚠️ No tokens selected to update");
+    showMessage("⚠️ No tokens selected to update!");
+    return;
+  }
+
+  try {
+    const configPath = path.join(dataDir, "config.json");
+    const configData = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    const webhookUrl = configData.webhookUrl;
+
+    // 🔹 Prepare array of holds
+    const payload = [];
+    selectedTokens.forEach((tokenId) => {
+      const hold = currentHolds.find((h) => h.id === tokenId);
+      if (hold) {
+        payload.push({
+          token_no: hold.token_no,
+          hold_id: hold.id,
+          is_running: 0
+        });
+      }
     });
 
-    await updateHoldStatus(lastTokenNo, lastHoldId);
-  } else {
-    console.warn("⚠️ Hold details missing, skipping hold update");
-  }
-} catch (err) {
-  console.error("❌ Failed to update hold status:", err);
-}
-
-
-}
-
-
-async function updateHoldStatus(tokenNo, holdId) {
-  try {
-    // 🔹 Load config.json path
-    const configPath = path.join(dataDir, "config.json");
-
-    // 🔹 Check if config.json exists
-    if (!fs.existsSync(configPath)) {
-      alert("❌ config.json not found!");
+    if (payload.length === 0) {
+      showMessage("⚠️ No valid tokens found to update!");
       return;
     }
 
-    // 🔹 Read and parse config
-    const configData = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-    const webhookUrl = configData?.webhookUrl?.trim();
+    console.log("🟢 Sending bulk update payload:", payload);
 
-    // 🔹 Validate webhook URL
-    if (!webhookUrl) {
-      alert("⚠️ Missing 'webhookUrl' in config.json");
-      return;
-    }
-
-    // 🔹 Validate input
-    if (!tokenNo || !holdId) {
-      console.warn("⚠️ Missing tokenNo or holdId:", { tokenNo, holdId });
-      return;
-    }
-
-    // 🟢 API call
-
-    const response = await fetch(`${webhookUrl}/updateholdstatus`, {
+    const res = await fetch(`${webhookUrl}/updateholdstatus`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        token_no: tokenNo,
-        hold_id: holdId,
-        is_running: 0, // ✅ Correct spelling and consistent
-      }),
+      body: JSON.stringify(payload)
     });
 
-    // 🧩 Handle plain text response first (some PHP APIs return non-JSON)
-    const text = await response.text();
-
-    let result;
+    const text = await res.text();
+    let json;
     try {
-      result = JSON.parse(text);
+      json = JSON.parse(text);
     } catch {
-      console.error("❌ Invalid JSON from API:", text);
-      showMessage("⚠️ Server returned invalid JSON format!");
+      console.error("⚠️ Invalid JSON from server:", text);
+      showMessage("⚠️ Invalid server response!");
       return;
     }
 
-    // ✅ Log success
-    console.log("✅ Hold status updated:", result);
+    console.log("✅ Hold update response:", json);
 
-    // ✅ Handle response
-    if (result.status === "success") {
-      console.log(`🟢 Token #${tokenNo} (Hold ID: ${holdId}) updated successfully`);
+    if (json.status === "success") {
+      // 🔹 Update UI (reset token colors)
+      selectedTokens.forEach((tokenId) => {
+        const tokenBox = document.getElementById(`token-${tokenId}`);
+        if (tokenBox) {
+          tokenBox.style.backgroundColor = "#204a87";
+          tokenBox.classList.remove("selected-token");
+        }
+      });
+
+      showMessage(`✅ ${json.updated_count || 0} token(s) updated successfully!`);
     } else {
-      showMessage(`⚠️ Hold update failed: ${result.message || "Unknown error"}`);
+      showMessage(`⚠️ ${json.message || "Failed to update holds!"}`);
     }
 
-  } catch (error) {
-    console.error("❌ Error updating hold status:", error);
-    showMessage("❌ Failed to update hold status!");
+    selectedTokens.clear();
+    await pullTokens(false);
+  } catch (err) {
+    console.error("❌ Failed to update holds:", err);
+    showMessage("❌ Failed to update selected holds!");
   }
 }
+
+
 
 
 
@@ -1421,6 +1439,8 @@ document.getElementById("refreshTokensBtn").addEventListener("click", async () =
   // showMessage("🔁 Tokens manually refreshed!");
 });
 
+let selectedTokens = new Set(); // 🔹 Store selected token IDs
+
 // 🔹 Pull Tokens from API
 async function pullTokens(showLoader = true) {
   const tokenContainer = document.getElementById("tokens");
@@ -1429,37 +1449,30 @@ async function pullTokens(showLoader = true) {
       "<p class='text-center text-muted'>Loading tokens...</p>";
 
   try {
-
     const userFile = path.join(dataDir, "user.json");
     const configPath = path.join(dataDir, "config.json");
 
-    // 🔹 Check if config.json exists
     if (!fs.existsSync(configPath)) {
       alert("❌ config.json not found!");
       return;
     }
 
-    // 🔹 Load config.json
     const configData = JSON.parse(fs.readFileSync(configPath, "utf-8"));
     const webhookUrl = configData.webhookUrl;
 
-    // 🔹 Check if webhookUrl exists
     if (!webhookUrl) {
       alert("⚠️ webhookUrl missing in config.json");
       return;
     }
 
-    // 🔹 Load user.json
     const userData = JSON.parse(fs.readFileSync(userFile, "utf-8"));
     const compId = userData?.user?.comp_id;
 
-    // 🔹 Fetch from API
     const response = await fetch(`${webhookUrl}/tokenpull`, {
-            method: "POST",
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ comp_id: compId }) // ✅ Send company ID
+      body: JSON.stringify({ comp_id: compId }),
     });
-
 
     const result = await response.json();
     console.log("🔹 Token Pull Result:", result);
@@ -1479,8 +1492,8 @@ async function pullTokens(showLoader = true) {
             name: i.item_name,
             qty: parseFloat(i.qty),
             price: parseFloat(i.rate),
-            token_no: h.hold.token_no
-          }))
+            token_no: h.hold.token_no,
+          })),
         };
       });
     } else {
@@ -1494,7 +1507,7 @@ async function pullTokens(showLoader = true) {
     return;
   }
 
-  // 🔹 Inject CSS if not already added
+  // 🔹 Inject CSS if not already
   if (!document.getElementById("tokenStyle")) {
     const style = document.createElement("style");
     style.id = "tokenStyle";
@@ -1508,6 +1521,7 @@ async function pullTokens(showLoader = true) {
       .token-grid {
         display: inline-flex;
         gap: 6px;
+        flex-wrap: wrap;
       }
       .token-box {
         background-color: #204a87;
@@ -1524,6 +1538,10 @@ async function pullTokens(showLoader = true) {
         background-color: #0044aa;
         transform: scale(1.05);
       }
+      // .token-box.selected {
+      //   background-color: #35a2acff !important; /* 🟢 Highlight */
+      //   box-shadow: 0 0 10px #a4952fff;
+      // }
       .token-text {
         font-size: 14px;
       }
@@ -1532,26 +1550,64 @@ async function pullTokens(showLoader = true) {
   }
 
   // 🔹 Render Tokens
-  // 🔹 Render Tokens (click → renderCart)
-
-  tokenContainer.innerHTML = `
-    <div class="token-scroll">
-      <div class="token-grid">
-        ${currentHolds
-          .map(
-            (hold) => `
-              <div class="token-box"
-                onclick="loadTokenToCart(${hold.id}); 
-                         lastHoldId = ${hold.id}; 
-                         lastTokenNo = '${hold.items[0]?.token_no || ''}';">
-                <span class="token-text">Token #${hold.token_no}</span>
-              </div>`
-          )
-          .join("")}
-      </div>
-    </div>`;
+ tokenContainer.innerHTML = `
+  <div class="token-scroll">
+    <div class="token-grid">
+      ${currentHolds
+        .map(
+          (hold) => `
+            <div class="token-box"
+              id="token-${hold.id}"
+              onclick="toggleTokenSelection(${hold.id});">
+              <span class="token-text">Token #${hold.token_no}</span>
+            </div>`
+        )
+        .join("")}
+    </div>
+  </div>`;
 
 }
+
+
+
+
+function toggleTokenSelection(holdId) {
+  const tokenBox = document.getElementById(`token-${holdId}`);
+  const hold = currentHolds.find(h => h.id === holdId);
+  if (!hold) return;
+
+  if (selectedTokens.has(holdId)) {
+    // Deselect (remove)
+    selectedTokens.delete(holdId);
+    tokenBox.style.backgroundColor = "#204a87";
+    // Remove token ke items cart se bhi hata do
+    cart = cart.filter(c => c.token_no !== hold.items[0].token_no);
+  } else {
+    // Select (add)
+    selectedTokens.add(holdId);
+    tokenBox.style.backgroundColor = "#9caf32ff";
+    // Add items to cart
+    cart.push(...hold.items);
+  }
+
+  renderCart();
+}
+
+
+
+function loadSelectedTokensToCart() {
+  cart = []; // clear old cart
+  selectedTokens.forEach((tokenId) => {
+    const hold = currentHolds.find((h) => h.id === tokenId);
+    if (hold) {
+      cart = cart.concat(hold.items);
+    }
+  });
+  renderCart();
+}
+
+
+
 
 
 // 🔹 Token click → directly add to cart

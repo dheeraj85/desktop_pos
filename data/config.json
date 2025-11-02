@@ -1,7 +1,7 @@
 {
   "companyName": "HARIVIND",
-  "webhookUrl": "http://192.168.29.86/harivind/desktop-api2",
-  "PushUrl": "http://192.168.29.86/harivind/desktop-api2/receive",
+  "webhookUrl": "http://localhost/harivind/desktop-api2",
+  "PushUrl": "http://localhost/harivind/desktop-api2/receive",
   "authKey": "51dsfsdfdbsd",
   "lastPushedId": "HV-10024"
 }
