@@ -1,149 +1,403 @@
 [
   {
-    "id": "ISB-10001",
-    "date": "2/11/2025, 7:55:06 pm",
+    "id": "SS-10001",
+    "cust_name": "harsh",
+    "cust_mobile": "741852963",
+    "cust_address": "uhbadckjnaicn",
+    "cust_gstin": "IUHASCIJBU",
+    "date": "3/11/2025, 9:34:01 pm",
     "items": [
       {
-        "name": "VEG CHEESE GARLIC BUN",
-        "qty": 1,
-        "price": 80,
-        "token_no": 8
-      },
-      {
-        "name": "CHOCOLATE CREAM DONUT",
-        "qty": 1,
-        "price": 50,
-        "token_no": 8
-      }
-    ],
-    "total": "130.00",
-    "paymentMode": "Cash",
-    "sale_prefix": "ISB-"
-  },
-  {
-    "id": "HR-10001",
-    "date": "2/11/2025, 8:50:29 pm",
-    "items": [
-      {
-        "name": "PIZZA 7",
-        "qty": 1,
-        "price": 30,
-        "token_no": 9
-      },
-      {
-        "name": "CHOCOLATE CREAM DONUT",
-        "qty": 1,
-        "price": 50,
-        "token_no": 9
-      },
-      {
+        "id": 3,
         "name": "MAWA MUFFIN",
         "qty": 1,
         "price": 30,
-        "token_no": 10
+        "gst_percent": 18,
+        "total": 30
       },
       {
+        "id": 4,
         "name": "VEG CHEESE GARLIC BUN",
         "qty": 1,
         "price": 80,
-        "token_no": 10
-      },
-      {
-        "name": "BAKLAWA",
-        "qty": 1,
-        "price": 1200,
-        "token_no": 11
+        "gst_percent": 18,
+        "total": 80
       }
     ],
-    "total": "1390.00",
+    "total": 110,
     "paymentMode": "Cash",
-    "sale_prefix": "HR-"
+    "sale_prefix": "SS-"
   },
   {
-    "id": "HR-10002",
-    "date": "2/11/2025, 9:17:51 pm",
+    "id": "SS-10002",
+    "cust_name": "ram lakhan ",
+    "cust_mobile": "748529658",
+    "cust_address": "rampur",
+    "cust_gstin": "SMD894SDK",
+    "date": "3/11/2025, 9:44:35 pm",
     "items": [
       {
-        "name": "PIZZA 7",
+        "id": 4,
+        "name": "VEG CHEESE GARLIC BUN",
         "qty": 1,
-        "price": 30,
-        "token_no": 9
+        "price": 80,
+        "gst_percent": 18,
+        "total": 80
       },
       {
-        "name": "CHOCOLATE CREAM DONUT",
+        "id": 5,
+        "name": "CHOCOLATE BROWNIE",
         "qty": 1,
         "price": 50,
-        "token_no": 9
+        "gst_percent": 18,
+        "total": 50
+      }
+    ],
+    "total": 130,
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10003",
+    "cust_name": "Harsh Vinodiya",
+    "cust_mobile": "9589376201",
+    "cust_address": "RAMPUR",
+    "cust_gstin": "IUBSD65SD",
+    "date": "3/11/2025, 9:58:26 pm",
+    "items": [
+      {
+        "id": 5,
+        "name": "CHOCOLATE BROWNIE",
+        "qty": 1,
+        "price": 50,
+        "gst_percent": 18,
+        "total": 50
       },
       {
+        "id": 4,
+        "name": "VEG CHEESE GARLIC BUN",
+        "qty": 1,
+        "price": 80,
+        "gst_percent": 18,
+        "total": 80
+      }
+    ],
+    "total": 130,
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10004",
+    "cust_name": "",
+    "cust_mobile": "",
+    "cust_address": "",
+    "cust_gstin": "",
+    "date": "3/11/2025, 10:04:36 pm",
+    "items": [
+      {
+        "id": 3,
         "name": "MAWA MUFFIN",
         "qty": 1,
         "price": 30,
-        "token_no": 10
+        "gst_percent": 18,
+        "total": 30
       },
       {
+        "id": 4,
         "name": "VEG CHEESE GARLIC BUN",
         "qty": 1,
         "price": 80,
-        "token_no": 10
-      },
-      {
-        "name": "BAKLAWA",
-        "qty": 1,
-        "price": 1200,
-        "token_no": 11
+        "gst_percent": 18,
+        "total": 80
       }
     ],
-    "total": "1390.00",
+    "total": 110,
     "paymentMode": "Cash",
-    "sale_prefix": "HR-"
+    "sale_prefix": "SS-"
   },
   {
-    "id": "HR-10003",
-    "date": "2/11/2025, 9:19:08 pm",
+    "id": "SS-10005",
+    "cust_name": "",
+    "cust_mobile": "",
+    "cust_address": "",
+    "cust_gstin": "",
+    "date": "3/11/2025, 10:05:21 pm",
     "items": [
       {
-        "name": "CREAM DONUT",
+        "id": 5,
+        "name": "CHOCOLATE BROWNIE",
         "qty": 1,
-        "price": 30,
-        "token_no": 12
+        "price": 50,
+        "gst_percent": 18,
+        "total": 50
+      },
+      {
+        "id": 9,
+        "name": "ASSORTED BAKLAVA (325GM)",
+        "qty": 1,
+        "price": 590,
+        "gst_percent": 18,
+        "total": 590
       }
     ],
-    "total": "30.00",
+    "total": 640,
     "paymentMode": "Cash",
-    "sale_prefix": "HR-"
+    "sale_prefix": "SS-"
   },
   {
-    "id": "HR-10004",
-    "date": "2/11/2025, 9:20:35 pm",
+    "id": "SS-10006",
+    "cust_name": "",
+    "cust_mobile": "",
+    "cust_address": "",
+    "cust_gstin": "",
+    "date": "3/11/2025, 10:07:17 pm",
     "items": [
       {
-        "name": "PLAIN FINGER BAKLAVA",
+        "id": 2,
+        "name": "BHAJI PAV",
         "qty": 1,
-        "price": 1200,
-        "token_no": 13
+        "price": 45,
+        "gst_percent": 5,
+        "total": 45
       },
       {
-        "name": "PIZZA 7",
+        "id": 3,
+        "name": "MAWA MUFFIN",
         "qty": 1,
         "price": 30,
-        "token_no": 13
-      },
-      {
-        "name": "CASHEW BAKLAVA TART",
-        "qty": 1,
-        "price": 1490,
-        "token_no": 13
-      },
-      {
-        "name": "CASHEW FINGER BAKLAVA",
-        "qty": 1,
-        "price": 1300,
-        "token_no": 13
+        "gst_percent": 18,
+        "total": 30
       }
     ],
-    "total": "4020.00",
+    "total": 75,
     "paymentMode": "Cash",
-    "sale_prefix": "HR-"
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10007",
+    "cust_name": "Harsh Vinodiya",
+    "cust_mobile": "9589376201",
+    "cust_address": "Rampur",
+    "cust_gstin": "BUYC41D",
+    "date": "3/11/2025, 10:09:24 pm",
+    "items": [
+      {
+        "id": 4,
+        "name": "VEG CHEESE GARLIC BUN",
+        "qty": 2,
+        "price": 80,
+        "gst_percent": 18,
+        "total": 160
+      },
+      {
+        "id": 5,
+        "name": "CHOCOLATE BROWNIE",
+        "qty": 1,
+        "price": 50,
+        "gst_percent": 18,
+        "total": 50
+      },
+      {
+        "id": 9,
+        "name": "ASSORTED BAKLAVA (325GM)",
+        "qty": 1,
+        "price": 590,
+        "gst_percent": 18,
+        "total": 590
+      }
+    ],
+    "total": 800,
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10008",
+    "cust_name": "",
+    "cust_mobile": "",
+    "cust_address": "",
+    "cust_gstin": "",
+    "date": "3/11/2025, 10:20:15 pm",
+    "items": [
+      {
+        "id": 4,
+        "name": "VEG CHEESE GARLIC BUN",
+        "qty": 1,
+        "price": 80,
+        "gst_percent": 18,
+        "total": 80
+      },
+      {
+        "id": 5,
+        "name": "CHOCOLATE BROWNIE",
+        "qty": 1,
+        "price": 50,
+        "gst_percent": 18,
+        "total": 50
+      }
+    ],
+    "total": 130,
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10009",
+    "cust_name": "",
+    "cust_mobile": "",
+    "cust_address": "",
+    "cust_gstin": "",
+    "date": "3/11/2025, 10:21:26 pm",
+    "items": [
+      {
+        "id": 5,
+        "name": "CHOCOLATE BROWNIE",
+        "qty": 1,
+        "price": 50,
+        "gst_percent": 18,
+        "total": 50
+      },
+      {
+        "id": 4,
+        "name": "VEG CHEESE GARLIC BUN",
+        "qty": 1,
+        "price": 80,
+        "gst_percent": 18,
+        "total": 80
+      }
+    ],
+    "total": 130,
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10010",
+    "cust_name": "Harsh Vinodiya ",
+    "cust_mobile": "9589376201",
+    "cust_address": "Rampur ",
+    "cust_gstin": "UYABCS894",
+    "date": "3/11/2025, 10:22:58 pm",
+    "items": [
+      {
+        "id": 5,
+        "name": "CHOCOLATE BROWNIE",
+        "qty": 1,
+        "price": 50,
+        "gst_percent": 18,
+        "total": 50
+      },
+      {
+        "id": 4,
+        "name": "VEG CHEESE GARLIC BUN",
+        "qty": 1,
+        "price": 80,
+        "gst_percent": 18,
+        "total": 80
+      }
+    ],
+    "total": 130,
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10011",
+    "cust_name": "",
+    "cust_mobile": "",
+    "cust_address": "",
+    "cust_gstin": "",
+    "date": "3/11/2025, 10:23:10 pm",
+    "items": [
+      {
+        "id": 5,
+        "name": "CHOCOLATE BROWNIE",
+        "qty": 1,
+        "price": 50,
+        "gst_percent": 18,
+        "total": 50
+      }
+    ],
+    "total": 50,
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10012",
+    "cust_name": "Harsh",
+    "cust_mobile": "9589376201",
+    "cust_address": "iauhckjacs n",
+    "cust_gstin": "uabcuacb",
+    "date": "3/11/2025, 10:23:43 pm",
+    "items": [
+      {
+        "id": 5,
+        "name": "CHOCOLATE BROWNIE",
+        "qty": 1,
+        "price": 50,
+        "gst_percent": 18,
+        "total": 50
+      },
+      {
+        "id": 4,
+        "name": "VEG CHEESE GARLIC BUN",
+        "qty": 1,
+        "price": 80,
+        "gst_percent": 18,
+        "total": 80
+      },
+      {
+        "id": 9,
+        "name": "ASSORTED BAKLAVA (325GM)",
+        "qty": 1,
+        "price": 590,
+        "gst_percent": 18,
+        "total": 590
+      }
+    ],
+    "total": 720,
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
+  },
+  {
+    "id": "SS-10013",
+    "cust_name": "harsh vinodiya ",
+    "cust_mobile": "9589376201",
+    "cust_address": "Rampur",
+    "cust_gstin": "HVKJBJK5",
+    "date": "3/11/2025, 10:29:31 pm",
+    "items": [
+      {
+        "id": 3,
+        "name": "MAWA MUFFIN",
+        "qty": 2,
+        "price": 30,
+        "gst_percent": 18,
+        "total": 60
+      },
+      {
+        "id": 2,
+        "name": "BHAJI PAV",
+        "qty": 1,
+        "price": 45,
+        "gst_percent": 5,
+        "total": 45
+      },
+      {
+        "id": 5,
+        "name": "CHOCOLATE BROWNIE",
+        "qty": 1,
+        "price": 50,
+        "gst_percent": 18,
+        "total": 50
+      },
+      {
+        "id": 9,
+        "name": "ASSORTED BAKLAVA (325GM)",
+        "qty": 1,
+        "price": 590,
+        "gst_percent": 18,
+        "total": 590
+      }
+    ],
+    "total": 745,
+    "paymentMode": "Cash",
+    "sale_prefix": "SS-"
   }
 ]

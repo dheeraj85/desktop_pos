@@ -814,6 +814,60 @@ function renderCart() {
   tbody.innerHTML = "";
   let totalQty = 0, totalAmount = 0;
 
+  // ✅ Inject CSS only once
+  if (!document.getElementById("customer-info-style")) {
+    const style = document.createElement("style");
+    style.id = "customer-info-style";
+    style.innerHTML = `
+      /* ===== Customer Info Styles ===== */
+      .customer-info-box {
+        background: #f9fafc;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      }
+
+      .customer-info-box label {
+        font-weight: 500;
+        color: #555;
+      }
+
+      .customer-info-box input {
+        border-radius: 6px;
+        border: 1px solid #ced4da;
+        transition: all 0.2s ease-in-out;
+      }
+
+      .customer-info-box input:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.1rem rgba(0,123,255,0.25);
+      }
+
+      .btn-customer-info {
+        background-color: #495057;
+        border: none;
+        color: white;
+        font-size: 13px;
+        padding: 5px 12px;
+        border-radius: 6px;
+        transition: 0.2s ease-in-out;
+      }
+
+      .btn-customer-info:hover {
+        background-color: #343a40;
+      }
+
+      /* Small screen responsive */
+      @media (max-width: 768px) {
+        .customer-info-box .col-md-4, .customer-info-box .col-md-12 {
+          margin-bottom: 10px;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // ✅ Render Cart Items
   cart.forEach((c, i) => {
     const subtotal = (c.qty || 0) * (c.price || 0);
     totalQty += (c.qty || 0);
@@ -842,16 +896,58 @@ function renderCart() {
             <i class="bi bi-trash"></i>
           </button>
         </td>
-      </tr>`;
+      </tr>
+    `;
   });
 
+  // ✅ If no items
   if (cart.length === 0) {
     tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No items added yet</td></tr>`;
+  } else {
+    // ✅ Customer Info Section
+    tbody.innerHTML += `
+      <tr>
+        <td colspan="5" class="text-end">
+          <button class="btn btn-sm btn-customer-info" type="button" data-bs-toggle="collapse" data-bs-target="#customer-info">
+            <i class="bi bi-person-lines-fill"></i> Customer Info
+          </button>
+        </td>
+      </tr>
+
+      <tr class="collapse" id="customer-info">
+        <td colspan="5">
+          <div class="customer-info-box p-3 mt-1">
+            <div class="row g-3 align-items-center">
+              <div class="col-md-4 col-sm-6">
+                <label class="form-label mb-1 small text-muted">Customer Name</label>
+                <input type="text" id="cust-name" class="form-control form-control-sm" placeholder="Enter name">
+              </div>
+              <div class="col-md-4 col-sm-6">
+                <label class="form-label mb-1 small text-muted">Mobile No.</label>
+                <input type="text" id="cust-mobile" class="form-control form-control-sm" placeholder="Enter mobile">
+              </div>
+              <div class="col-md-4 col-sm-6">
+                <label class="form-label mb-1 small text-muted">GSTIN</label>
+                <input type="text" id="cust-gstin" class="form-control form-control-sm" placeholder="Enter GSTIN">
+              </div>
+              <div class="col-md-12 col-sm-12">
+                <label class="form-label mb-1 small text-muted">Address</label>
+                <input type="text" id="cust-address" class="form-control form-control-sm" placeholder="Enter address">
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    `;
   }
 
+  // ✅ Update Totals
   document.getElementById("qty").innerText = Math.round(totalQty);
   document.getElementById("total").innerText = Math.round(totalAmount);
 }
+
+
+
 
 // ========================
 
@@ -966,7 +1062,9 @@ function addToCart(id, focusQty = false) {
       name: product.name,
       price: parseFloat(product.price),
       qty: 1,
-      rate_change_permission: product.rate_change_permission
+      rate_change_permission: product.rate_change_permission,
+      gst_percent: product.gst_percent,
+      
     });
   }
 
@@ -1057,15 +1155,48 @@ async function confirmPayment() {
 
   const invoiceNo = `${salePrefix}${lastNum + 1}`;
 
-  // 🔹 4) Build sale data
-  const saleData = {
-    id: invoiceNo,
-    date: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
-    items: Array.isArray(cart) ? cart : [],
-    total,
-    paymentMode: mode,
-    sale_prefix: salePrefix
-  };
+// 🔹 4) Build sale data (with GST info)
+// const saleData = {
+//   id: invoiceNo,
+//   date: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
+//   items: Array.isArray(cart)
+//     ? cart.map(item => ({
+//         id: item.id || null,
+//         name: item.name || "",
+//         qty: +item.qty || 0,
+//         price: +item.price || 0,
+//         gst_percent: +item.gst_percent || 0, // 👈 ensure GST percent is saved
+//         total: (+item.qty || 0) * (+item.price || 0)
+//       }))
+//     : [],
+//   total: +total || 0,
+//   paymentMode: mode,
+//   sale_prefix: salePrefix,
+  // };
+  
+
+const saleData = {
+  id: invoiceNo,
+  cust_name: document.getElementById("cust-name")?.value || "",
+  cust_mobile: document.getElementById("cust-mobile")?.value || "",
+  cust_address: document.getElementById("cust-address")?.value || "",
+  cust_gstin: document.getElementById("cust-gstin")?.value || "",
+  date: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
+  items: Array.isArray(cart)
+    ? cart.map((item) => ({
+        id: item.id || null,
+        name: item.name || "",
+        qty: +item.qty || 0,
+        price: +item.price || 0,
+        gst_percent: +item.gst_percent || 0,
+        total: (+item.qty || 0) * (+item.price || 0),
+      }))
+    : [],
+  total: +total || 0,
+  paymentMode: mode,
+  sale_prefix: salePrefix,
+};
+
 
   // 🔹 5) Save sale
   try {
@@ -1309,6 +1440,10 @@ async function pushData(auto = false) {
       sale: {
         id: sale.id,
         invoice_number: sale.id,
+        cust_name: sale.cust_name,
+        cust_mobile: sale.cust_mobile,
+        cust_address: sale.cust_address,
+        cust_gstin: sale.cust_gstin,
         created_by: user_id,
         year: new Date(sale.date).getFullYear(),
         customer_name: "Walk-in Customer",

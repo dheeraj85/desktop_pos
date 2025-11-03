@@ -1,13 +1,13 @@
 {
   "user": {
-    "id": 29,
-    "comp_id": 5,
+    "id": 38,
+    "comp_id": 8,
     "user_type": "billing",
-    "username": "pos_rc",
+    "username": "pos_rm",
     "role": "pos"
   },
   "cash_counter": {
-    "id": 23,
+    "id": 34,
     "counter_name": "Counter1"
   }
 }

@@ -79,7 +79,7 @@
         <div class="kot-slip">
           <div class="center">KOT - ${company.company_name || "Restaurant"}</div>
           <div class="small">Date: ${dateStr}</div>
-          <div class="small">Token: #${tokenNo}</div>
+          <div class="small">Token: #${tokenNo}</div>                         
           <hr>
           <table>
             <thead>
@@ -110,76 +110,121 @@
       return kotHTML;
     }
 
-    function buildInvoiceHTML(saleData, dateStr, tokenNo, tableNo) {
-      let billHTML = `
-        <div class="bill-slip">
-          <table style="width:100%; text-align:center;">
-            <tr>
-              <td>
-                <b style="font-size:16px;">${company.company_name || "Company Name"}</b><br>
-                <label style="font-size:11px;">
-                  ${company.company_address || ""}<br>
-                  &#9742; ${company.contact_number || ""}<br>
-                  GSTIN: ${company.company_gstin || "N/A"}
-                </label>
-              </td>
-            </tr>
-          </table>
-
-          <hr>
-          <div class="small">
-            <b>Date:</b> ${saleData.date || dateStr}<br>
-            <b>Invoice:</b> ${saleData.id || ("INV" + tokenNo)}<br>
-             <b>Token:</b> #${tokenNo}
-          </div>
-          <hr>
-
-          <table>
-            <thead>
-              <tr>
-                <th class="left">Item</th>
-                <th class="qty">Qty</th>
-                <th class="rate">Rate</th>
-                <th class="amt">Amt</th>
-              </tr>
-            </thead>
-            <tbody>
-      `;
-
-      let computedTotal = 0;
-      saleData.items.forEach(item => {
-        const qty  = +item.qty || 0;
-        const rate = +item.price || 0;
-        const amt  = qty * rate;
-        computedTotal += amt;
-
-        billHTML += `
-          <tr>
-            <td class="item">${item.name || ""}</td>
-            <td class="qty">${fmt(qty)}</td>
-            <td class="rate">${fmt(rate)}</td>
-            <td class="amt">${fmt(amt)}</td>
-          </tr>`;
-      });
-
-      const finalTotal = saleData.total != null ? +saleData.total : computedTotal;
-
-      billHTML += `
-            </tbody>
-          </table>
-
-          <hr>
-          <div class="right"><b>Total: ₹${fmt(finalTotal)}</b></div>
-          <div class="center small">Payment Mode: ${saleData.paymentMode || "Cash"}</div>
-          <hr>
-          <div class="center">Thank You! Visit Again 🙏</div>
-          <div class="slip-padding-end"></div>
-        </div>
-      `;
-      return billHTML;
-    }
-
     
+function buildInvoiceHTML(saleData, dateStr, tokenNo, tableNo) {
+  let billHTML = `
+    <div class="bill-slip">
+      <table style="width:100%; text-align:center;">
+        <tr>
+          <td>
+            <b style="font-size:16px;">${company.company_name || "Company Name"}</b><br>
+            <label style="font-size:11px;">
+              ${company.company_address || ""}<br>
+              &#9742; ${company.contact_number || ""}<br>
+              GSTIN: ${company.company_gstin || "N/A"} <br>
+              FSSAI No: ${company.fssai_no || "N/A"}
+            </label>
+          </td>
+        </tr>
+      </table>
+
+      <hr>
+      <div class="small">
+        <b>Date:</b> ${saleData.date || dateStr}<br>
+        <b>Invoice:</b> ${saleData.id || ("INV" + tokenNo)}<br>
+      </div>
+  `;
+
+  // ✅ Customer Info (only if provided)
+  if (
+    saleData.cust_name ||
+    saleData.cust_mobile ||
+    saleData.cust_gstin ||
+    saleData.cust_address
+  ) {
+    billHTML += `
+      <hr>
+      <div class="small">
+        <b>Customer Details:</b><br>
+        ${saleData.cust_name ? `Name: ${saleData.cust_name}<br>` : ""}
+        ${saleData.cust_mobile ? `Mobile: ${saleData.cust_mobile}<br>` : ""}
+        ${saleData.cust_gstin ? `GSTIN: ${saleData.cust_gstin}<br>` : ""}
+        ${saleData.cust_address ? `Address: ${saleData.cust_address}<br>` : ""}
+      </div>
+    `;
+  }
+
+  billHTML += `
+      <hr>
+      <table>
+        <thead>
+          <tr>
+            <th class="left">Item</th>
+            <th class="qty">Qty</th>
+            <th class="rate">Rate</th>
+            <th class="amt">Amt</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  let computedTotal = 0;
+  let gstMap = {}; // for GST summary
+
+  saleData.items.forEach(item => {
+    const qty = +item.qty || 0;
+    const rateInclusive = +item.price || 0;
+    const gstPercent = +item.gst_percent || 0;
+
+    const baseRate = rateInclusive / (1 + gstPercent / 100);
+    const amtBase = baseRate * qty;
+    const gstValue = amtBase * (gstPercent / 100);
+    const amtTotal = amtBase + gstValue;
+
+    computedTotal += amtTotal;
+    gstMap[gstPercent] = (gstMap[gstPercent] || 0) + amtBase;
+
+    billHTML += `
+      <tr>
+        <td class="item">${item.name || ""} (${gstPercent}%)</td>
+        <td class="qty">${fmt(qty)}</td>
+        <td class="rate">${fmt(rateInclusive)}</td>
+        <td class="amt">${fmt(amtTotal)}</td>
+      </tr>`;
+  });
+
+  const finalTotal = saleData.total != null ? +saleData.total : computedTotal;
+
+  billHTML += `
+        </tbody>
+      </table>
+
+      <hr>
+      <div class="right"><b>Total: ₹${fmt(finalTotal)}</b></div>
+      <div class="center small">Payment Mode: ${saleData.paymentMode || "Cash"}</div>
+  `;
+
+  // ✅ GST Summary - only if applicable
+  if (Object.keys(gstMap).length > 0) {
+    billHTML += `<hr><div class="center small"><b>GST Summary:</b><br>`;
+    let totalGSTValue = 0;
+    for (const [gstPercent, taxableAmt] of Object.entries(gstMap)) {
+      const gstValue = (taxableAmt * gstPercent) / 100;
+      totalGSTValue += gstValue;
+      billHTML += `${gstPercent}% → ₹${fmt(gstValue)}<br>`;
+    }
+    billHTML += `<b>Total GST: ₹${fmt(totalGSTValue)}</b></div>`;
+  }
+
+  billHTML += `
+      <hr>
+      <div class="center">Thank You! Visit Again 🙏</div>
+      <div class="slip-padding-end"></div>
+    </div>
+  `;
+  return billHTML;
+}
+   
     // ---- Entry point: invoice-only (UI identical to invoice.html) ----
     window.addEventListener("message", (event) => {
       const saleData = event.data;
