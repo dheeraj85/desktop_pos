@@ -1,94 +1,247 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Login - POS</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
-    /* Fullscreen and gradient background */
     body {
+      margin: 0;
+      font-family: 'Raleway', sans-serif;
+      height: 100vh;
+      background: #f5f7fb;
+    }
+
+    .login-container {
       display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* LEFT SIDE SLIDER */
+    .left-slider {
+      flex: 1.2;
+      position: relative;
+      overflow: hidden;
+      background: #0b1c3a;
+    }
+
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .slide.active {
+      opacity: 1;
+    }
+
+    .slide-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(11, 28, 58, 0.65);
+      display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
-      height: 100vh;
-      margin: 0;
-      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-      font-family: "Poppins", sans-serif;
-    }
-
-    /* Centered card */
-    .login-box {
-      background: #fff;
-      padding: 50px 40px;
-      border-radius: 20px;
-      box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-      width: 450px;
-      max-width: 90%;
+      color: #fff;
       text-align: center;
-      transition: transform 0.3s ease;
+      padding: 20px;
     }
 
-    .login-box:hover {
-      transform: translateY(-5px);
+    .slide-overlay img {
+      width: 160px;
+      margin-bottom: 20px;
     }
 
-    .login-box h3 {
-      color: #0d6efd;
-      margin-bottom: 30px;
-      font-weight: 700;
+    .slide-overlay h2 {
+      font-weight: 600;
+      font-size: 42px;
+      margin-bottom: 10px;
+    }
+
+    .slide-overlay p {
+      color: #e1e7ff;
+      font-size: 22px;
+      max-width: 700px;
+      line-height: 1.6;
+      margin: 0 auto;
+    }
+
+    /* RIGHT SIDE LOGIN BOX */
+    .right-form {
+      flex: 0.8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+    }
+
+    .form-box {
+      width: 100%;
+      max-width: 380px;
+      background: #fff;
+      border-radius: 12px;
+      padding: 40px 35px;
+      box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-box h3 {
+      font-size: 32px;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      text-align: center;
+      margin-bottom: 25px;
     }
 
     .form-control {
-      border-radius: 12px;
-      height: 50px;
-      padding: 10px;
-      font-size: 1rem;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      padding: 20px 15px;
+      font-size: 18px;
+      margin-bottom: 15px;
+      font-weight: 500;
+    }
+
+    .form-control:focus {
+      border-color: #6a5acd;
+      box-shadow: 0 0 0 2px rgba(106, 90, 205, 0.2);
+      font-weight: 600;
     }
 
     .btn-login {
-      background: #0d6efd;
+      background: linear-gradient(90deg, #6a5acd, #836fff);
       border: none;
-      border-radius: 12px;
-      height: 50px;
+      border-radius: 10px;
       font-weight: 600;
-      font-size: 1rem;
-      transition: 0.3s;
+      font-size: 20px;
+      padding: 15px;
+      width: 100%;
+      transition: all 0.3s ease;
+      color: #fff;
     }
 
     .btn-login:hover {
-      background: #0b5ed7;
+      background: linear-gradient(90deg, #5948d7, #715aff);
+      transform: translateY(-1px);
     }
 
-    .error-text {
-      font-size: 0.9rem;
+    .sticky-logo {
+      position: absolute;
+      top: 25px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      text-align: center;
     }
 
-    .login-icon {
-      font-size: 60px;
-      color: #0d6efd;
-      margin-bottom: 20px;
+    .sticky-logo img {
+      width: 150px;
+      height: auto;
+      background: rgba(255, 255, 255, 0.7);
+      padding: 10px 18px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    @media (max-width: 992px) {
+      .login-container {
+        flex-direction: column;
+      }
+      .left-slider {
+        height: 40vh;
+      }
+      .right-form {
+        height: 60vh;
+      }
+      .slide-overlay h2 {
+        font-size: 24px;
+      }
+      .slide-overlay p {
+        font-size: 16px;
+        max-width: 90%;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="login-box">
-    <i class="bi bi-person-circle login-icon"></i>
-    <h3>POS Login</h3>
-    <div class="mb-3">
-      <label class="form-label text-start w-100">Username</label>
-      <input type="text" id="username" class="form-control" placeholder="Enter username">
+ <div class="login-container">
+  <!-- LEFT SLIDER -->
+  <div class="left-slider">
+    <div class="sticky-logo">
+      <a href="https://cics.co.in/">
+        <img src="web/uploads/cics_logo.png" alt="CICS">
+      </a>
     </div>
-    <div class="mb-3">
-      <label class="form-label text-start w-100">Password</label>
-      <input type="password" id="password" class="form-control" placeholder="Enter password">
+
+    <!-- ✅ Slide 1 -->
+    <div class="slide active" style="background-image: url('web/uploads/slide1.jpg');">
+      <div class="slide-overlay">
+        <h2>Welcome to CICS</h2>
+        <p>Accelerate your business with scalable, customized, and high-performance software solutions.</p>
+      </div>
     </div>
-    <button class="btn btn-login w-100 mb-2" onclick="login()" style="color: white;">Login</button>
-    <p class="text-danger mt-2 error-text" id="error"></p>
+
+    <!-- ✅ Slide 2 -->
+    <div class="slide" style="background-image: url('web/uploads/slide2.jpg');">
+      <div class="slide-overlay">
+        <h2>Anukool Software</h2>
+        <p>Quickly add items, manage discounts, print KOTs or bills, and streamline your order flow with ease.</p>
+      </div>
+    </div>
+
+    <!-- ✅ Slide 3 -->
+    <div class="slide" style="background-image: url('web/uploads/slide3.jpg');">
+      <div class="slide-overlay">
+        <h2>Fast & Secure Checkout</h2>
+        <p>Experience seamless billing with paperless, barcode-free, and secure multi-payment options.</p>
+      </div>
+    </div>
   </div>
 
+  <!-- RIGHT LOGIN FORM -->
+  <div class="right-form">
+    <div class="form-box">
+      <h3>Login</h3>
+      <div class="mb-3">
+        <label class="form-label text-start w-100">Username</label>
+        <input type="text" id="username" class="form-control" placeholder="Enter username">
+      </div>
+      <div class="mb-3">
+        <label class="form-label text-start w-100">Password</label>
+        <input type="password" id="password" class="form-control" placeholder="Enter password">
+      </div>
+      <button class="btn btn-login w-100 mb-2" onclick="login()">Login</button>
+      <p class="text-danger mt-2 error-text" id="error" style="text-align: center;"></p>
+    </div>
+  </div>
+</div>
 
+
+  <script src="renderer.js"></script>
+
+  <script>
+    // Auto Slide Transition
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    setInterval(() => {
+      slides[currentSlide].classList.remove('active');
+      currentSlide = (currentSlide + 1) % slides.length;
+      slides[currentSlide].classList.add('active');
+    }, 6000);
+  </script>
 </body>
 </html>
-
- <script src="renderer.js"></script>
