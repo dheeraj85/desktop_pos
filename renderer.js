@@ -907,32 +907,38 @@ function renderCart() {
     // ✅ Customer Info Section
     tbody.innerHTML += `
       <tr>
-        <td colspan="5" class="text-end">
-          <button class="btn btn-sm btn-customer-info" type="button" data-bs-toggle="collapse" data-bs-target="#customer-info">
-            <i class="bi bi-person-lines-fill"></i> Customer Info
-          </button>
-        </td>
+       <td colspan="5" class="text-end">
+  <a href="#customer-info" 
+     data-bs-toggle="collapse" 
+     class="text-decoration-none text-primary fw-bold">
+     <i class="bi bi-person-lines-fill"></i> Customer Info
+  </a>
+</td>
       </tr>
 
       <tr class="collapse" id="customer-info">
         <td colspan="5">
           <div class="customer-info-box p-3 mt-1">
             <div class="row g-3 align-items-center">
-              <div class="col-md-4 col-sm-6">
-                <label class="form-label mb-1 small text-muted">Customer Name</label>
+              <div class="col-md-6 col-sm-6">
+                <label class="form-label mb-1 small text-muted">Customer / firm Name</label>
                 <input type="text" id="cust-name" class="form-control form-control-sm" placeholder="Enter name">
               </div>
-              <div class="col-md-4 col-sm-6">
+              <div class="col-md-6 col-sm-6">
                 <label class="form-label mb-1 small text-muted">Mobile No.</label>
                 <input type="text" id="cust-mobile" class="form-control form-control-sm" placeholder="Enter mobile">
               </div>
-              <div class="col-md-4 col-sm-6">
-                <label class="form-label mb-1 small text-muted">GSTIN</label>
-                <input type="text" id="cust-gstin" class="form-control form-control-sm" placeholder="Enter GSTIN">
-              </div>
-              <div class="col-md-12 col-sm-12">
+             <div class="col-md-6 col-sm-6">
+  <label class="form-label mb-1 small text-muted">GSTIN</label>
+  <input type="text" id="cust-gstin" 
+         class="form-control form-control-sm" 
+         placeholder="Enter GSTIN" 
+         style="text-transform: uppercase;">
+</div>
+
+              <div class="col-md-6 col-sm-12">
                 <label class="form-label mb-1 small text-muted">Address</label>
-                <input type="text" id="cust-address" class="form-control form-control-sm" placeholder="Enter address">
+                <textarea id="cust-address" class="form-control form-control-sm" placeholder="Enter address"></textarea>
               </div>
             </div>
           </div>
