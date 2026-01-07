@@ -221,12 +221,31 @@
           <br>
   <button class="btn btn-danger btn-custom btn-sm" onclick="holdOrder()"><i class="bi bi-hand-thumbs-up"></i> Hold</button>
           
-          <button id="btnPrintOnly" class="btn btn-primary btn-sm">
+          <!-- <button id="btnPrintOnly" class="btn btn-primary btn-sm">
             <i class="bi bi-printer"></i> Print Invoice
           </button>
           <button id="btnPrintKOT" class="btn btn-success btn-sm">
             <i class="bi bi-printer-fill"></i> Print with KOT
-          </button>
+          </button> -->
+
+  <button id="btnPrintOnly" class="btn btn-primary btn-sm">
+  <i class="bi bi-printer"></i>
+  <span class="btn-text">Print Invoice</span>
+  <span class="btn-spinner d-none">
+    <span class="spinner-border spinner-border-sm"></span>
+    Printing...
+  </span>
+</button>
+
+<button id="btnPrintKOT" class="btn btn-success btn-sm">
+  <i class="bi bi-printer-fill"></i>
+  <span class="btn-text">Print with KOT</span>
+  <span class="btn-spinner d-none">
+    <span class="spinner-border spinner-border-sm"></span>
+    Printing...
+  </span>
+</button>
+
 
           <!-- <button id="" class="btn btn-info btn-sm" style="margin-top: 5px;">
             <i class=""></i> Customer Deatil

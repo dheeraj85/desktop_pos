@@ -10,13 +10,25 @@ const saleFile    = path.join(dataDir, "saleData.json");
 const holdFile    = path.join(dataDir, "holdData.json");
 
 
-
-
 let products = [];
 let categories = [];
 let companyDetail = [];
 let paymentModes = [];
 let cart = [];
+
+// 🔒 Disable browser print completely
+window.print = () => {
+  console.warn("window.print blocked");
+};
+
+
+document.addEventListener("keydown", (e) => {
+  if (e.ctrlKey && e.key.toLowerCase() === "p") {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  }
+});
 
 
 const ItemPage = {
@@ -652,6 +664,22 @@ function filterProducts() {
 }
 
 
+function setButtonLoading(btn, loading) {
+  if (!btn) return;
+
+  const spinner = btn.querySelector(".btn-spinner");
+  const text = btn.querySelector(".btn-text");
+
+  if (loading) {
+    btn.disabled = true;
+    spinner?.classList.remove("d-none");
+    text?.classList.add("d-none");
+  } else {
+    btn.disabled = false;
+    spinner?.classList.add("d-none");
+    text?.classList.remove("d-none");
+  }
+}
 // function handleSearchKey(e) {
 //   if (e.key === "Enter") {
 //     e.preventDefault();
@@ -1107,7 +1135,7 @@ async function confirmPayment() {
   const totalTxt = (document.getElementById("total")?.innerText || "0").toString().trim();
   const total = isNaN(+totalTxt) ? totalTxt : (+totalTxt).toFixed(2);
 
-  // 🔹 1) Read sale_prefix
+  // 🔹 1) Read sale_prefix from company.json
   let salePrefix = "";
   try {
     const companyPath = path.join(dataDir, "company.json");
@@ -1116,7 +1144,7 @@ async function confirmPayment() {
       if (raw) {
         const json = JSON.parse(raw);
         const companyObj = Array.isArray(json) ? json[0] : json;
-        salePrefix = companyObj?.sale_prefix?.trim() || "";
+        salePrefix = (companyObj?.sale_prefix || "").toString().trim();
       }
     }
   } catch (err) {
@@ -1142,10 +1170,34 @@ async function confirmPayment() {
     sales = [];
   }
 
-  // 🔹 3) Determine invoice number
-  let lastNum = 10000;
+  // 🔹 3) Read config.json (READ-ONLY here) to use only if sales file is empty
+  const configPath = path.join(dataDir, "config.json");
+  let config = {};
   try {
-    const nums = sales.map(s => {
+    if (fs.existsSync(configPath)) {
+      const rawCfg = fs.readFileSync(configPath, "utf8").trim();
+      if (rawCfg) config = JSON.parse(rawCfg);
+    }
+  } catch (e) {
+    console.error("config.json read error:", e);
+    config = {};
+  }
+
+  // 🔹 4) Determine invoice sequence
+  let baseNum = 10000;
+  if (sales.length === 0) {
+    // Sales file empty -> prefer config.lastPushedId (if valid), else use baseNum
+    if (config && config.lastPushedId != null) {
+      const rawId = String(config.lastPushedId);
+      let numericPart = rawId;
+      if (salePrefix && rawId.startsWith(salePrefix)) numericPart = rawId.slice(salePrefix.length);
+      const m = numericPart.match(/(\d+)$/);
+      const parsed = m ? parseInt(m[1], 10) : NaN;
+      if (Number.isFinite(parsed)) baseNum = parsed;
+    }
+  } else {
+    // Sales exist -> compute max numeric suffix from sales and use it
+    const nums = sales.map((s) => {
       let id = (s && s.id) ? String(s.id) : "";
       if (!id) return null;
       if (salePrefix && id.startsWith(salePrefix)) id = id.slice(salePrefix.length);
@@ -1154,57 +1206,37 @@ async function confirmPayment() {
       return Number.isFinite(num) ? num : null;
     }).filter(n => n !== null);
 
-    if (nums.length) lastNum = Math.max(...nums);
-  } catch (e) {
-    console.error("invoice parse error:", e);
+    if (nums.length) baseNum = Math.max(...nums);
   }
 
-  const invoiceNo = `${salePrefix}${lastNum + 1}`;
+  const nextSeq = baseNum + 1;
+  const invoiceNo = `${salePrefix}${nextSeq}`;
 
-// 🔹 4) Build sale data (with GST info)
-// const saleData = {
-//   id: invoiceNo,
-//   date: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
-//   items: Array.isArray(cart)
-//     ? cart.map(item => ({
-//         id: item.id || null,
-//         name: item.name || "",
-//         qty: +item.qty || 0,
-//         price: +item.price || 0,
-//         gst_percent: +item.gst_percent || 0, // 👈 ensure GST percent is saved
-//         total: (+item.qty || 0) * (+item.price || 0)
-//       }))
-//     : [],
-//   total: +total || 0,
-//   paymentMode: mode,
-//   sale_prefix: salePrefix,
-  // };
-  
+  // 🔹 5) Build sale data
+  const saleData = {
+    id: invoiceNo,
+    cust_name: document.getElementById("cust-name")?.value || "",
+    cust_mobile: document.getElementById("cust-mobile")?.value || "",
+    cust_address: document.getElementById("cust-address")?.value || "",
+    cust_gstin: document.getElementById("cust-gstin")?.value || "",
+    date: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
+    items: Array.isArray(cart)
+      ? cart.map((item) => ({
+          id: item.id || null,
+          gst_percent: item.gst_percent || null,
+          name: item.name || "",
+          qty: +item.qty || 0,
+          price: +item.price || 0,
+          // gst_percent: +item.gst_percent || 0,
+          total: (+item.qty || 0) * (+item.price || 0),
+        }))
+      : [],
+    total: +total || 0,
+    paymentMode: mode,
+    sale_prefix: salePrefix,
+  };
 
-const saleData = {
-  id: invoiceNo,
-  cust_name: document.getElementById("cust-name")?.value || "",
-  cust_mobile: document.getElementById("cust-mobile")?.value || "",
-  cust_address: document.getElementById("cust-address")?.value || "",
-  cust_gstin: document.getElementById("cust-gstin")?.value || "",
-  date: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
-  items: Array.isArray(cart)
-    ? cart.map((item) => ({
-        id: item.id || null,
-        name: item.name || "",
-        qty: +item.qty || 0,
-        price: +item.price || 0,
-        gst_percent: +item.gst_percent || 0,
-        total: (+item.qty || 0) * (+item.price || 0),
-      }))
-    : [],
-  total: +total || 0,
-  paymentMode: mode,
-  sale_prefix: salePrefix,
-};
-
-
-  // 🔹 5) Save sale
+  // 🔹 6) Save sale (append to sales file)
   try {
     const dir = path.dirname(saleFile);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -1216,10 +1248,18 @@ const saleData = {
     return;
   }
 
-  // 🔹 6) Print invoice
-  try { doPrint(saleData); } catch (e) { console.error("printInvoice error:", e); }
+  // NOTE: Intentionally NOT updating config.json.lastPushedId here.
+  // Another function (server push) is responsible for pulling/updating lastPushedId.
 
-  // 🔹 7) Clear cart + close modal
+  // 🔹 7) Print invoice
+// 🔹 7) Print invoice (WAIT till print completes)
+try {
+  await doPrint(saleData);   // ⭐ YAHI MAIN FIX HAI
+} catch (e) {
+  console.error("printInvoice error:", e);
+}
+
+  // 🔹 8) Clear cart + close modal
   cart = [];
   renderCart();
   try {
@@ -1227,20 +1267,18 @@ const saleData = {
     if (modal) modal.hide();
   } catch (e) {}
 
-  // 🔹 8) Update Hold Status
- try {
+  // 🔹 9) Update Hold Status
+  try {
     await updateSelectedHolds();
   } catch (err) {
     console.error("❌ Failed to update hold status:", err);
   }
-
 }
-
 
 async function updateSelectedHolds() {
   if (!selectedTokens || selectedTokens.size === 0) {
     console.warn("⚠️ No tokens selected to update");
-    showMessage("⚠️ No tokens selected to update!");
+    // showMessage("⚠️ No tokens selected to update!");
     return;
   }
 
@@ -1342,13 +1380,25 @@ function printInvoiceOnly(saleData) {
 }
 
 // Unified print selector (keeps existing flow intact)
+// function doPrint(saleData) {
+//   if (window.__invoiceOnlyFlow) {
+//     window.__invoiceOnlyFlow = false;       // reset flag for next time
+//     return printInvoiceOnly(saleData);      // ✅ invoice-only route
+//   }
+//   return printInvoice(saleData);            // 🟢 existing KOT + invoice route
+// }
+
 function doPrint(saleData) {
+  const { ipcRenderer } = require("electron");
+
+  // invoice only ya invoice + KOT
   if (window.__invoiceOnlyFlow) {
-    window.__invoiceOnlyFlow = false;       // reset flag for next time
-    return printInvoiceOnly(saleData);      // ✅ invoice-only route
+    return ipcRenderer.invoke("print-invoice-only", saleData);
+  } else {
+    return ipcRenderer.invoke("print-invoice", saleData);
   }
-  return printInvoice(saleData);            // 🟢 existing KOT + invoice route
 }
+
 
 
 loadData();
@@ -1737,7 +1787,7 @@ function toggleTokenSelection(holdId) {
 
 
 function loadSelectedTokensToCart() {
-  cart = []; // clear old cart
+  cart = [];
   selectedTokens.forEach((tokenId) => {
     const hold = currentHolds.find((h) => h.id === tokenId);
     if (hold) {
@@ -1772,6 +1822,7 @@ function loadTokenToCart(tokenId) {
 
 
 //---------------TOKEN PULL END ------------------//
+
 
 
 
@@ -1874,24 +1925,65 @@ function buildCurrentSaleDataInline(){
   };
 }
 
-function handlePrintOnly() {
+// function handlePrintOnly() {
+//   if (!cart || cart.length === 0) {
+//     showMessage("🛒 Cart is empty!");
+//     return;
+//   }
+//   window.__invoiceOnlyFlow = true;  
+//   confirmPayment();                 
+// }
+
+// // Print with KOT using existing flow (main -> invoice.html)
+// function handlePrintWithKot() {
+//   if (!cart || cart.length === 0) {
+//     showMessage("🛒 Cart is empty!");
+//     return;
+//   }
+//   confirmPayment();
+// }
+
+async function handlePrintOnly() {
   if (!cart || cart.length === 0) {
     showMessage("🛒 Cart is empty!");
     return;
   }
-  window.__invoiceOnlyFlow = true;  
-  confirmPayment();                 
+
+  const btn = document.getElementById("btnPrintOnly");
+
+  try {
+    setButtonLoading(btn, true);     // 🔄 spinner ON
+    window.__invoiceOnlyFlow = true;
+    await confirmPayment();          // ⏳ wait till print completes
+  } catch (err) {
+    console.error("Print Invoice Only failed:", err);
+    showMessage("❌ Printing failed");
+  } finally {
+    setButtonLoading(btn, false);    // ✅ spinner OFF
+  }
 }
 
-// Print with KOT using existing flow (main -> invoice.html)
-function handlePrintWithKot() {
+
+// ================= Print with KOT =================
+async function handlePrintWithKot() {
   if (!cart || cart.length === 0) {
     showMessage("🛒 Cart is empty!");
     return;
   }
-  confirmPayment();
-}
 
+  const btn = document.getElementById("btnPrintKOT");
+
+  try {
+    setButtonLoading(btn, true);     // 🔄 spinner ON
+    window.__invoiceOnlyFlow = false;
+    await confirmPayment();          // ⏳ wait till print completes
+  } catch (err) {
+    console.error("Print with KOT failed:", err);
+    showMessage("❌ Printing failed");
+  } finally {
+    setButtonLoading(btn, false);    // ✅ spinner OFF
+  }
+}
 
 // --- Patch confirmPayment to read inline radio without breaking anything ---
 (function patchConfirmPaymentToReadInline(){
