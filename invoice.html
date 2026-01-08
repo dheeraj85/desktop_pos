@@ -54,10 +54,10 @@ th {
   border-bottom: 1px dashed #000;
 }
 
-td.item { width: 38mm; }
-td.qty  { width: 8mm; text-align: right; }
-td.rate { width: 10mm; text-align: right; }
-td.amt  { width: 14mm; text-align: right; }
+td.item { width: 33mm; }
+td.qty  { width: 7mm;  text-align: right; white-space: pre; }
+td.rate { width: 12mm; text-align: right; white-space: pre; padding-right: 2mm; }
+td.amt  { width: 14mm; text-align: right; white-space: pre; padding-left: 1mm; }
 
 .page-break {
   page-break-after: always;
@@ -78,6 +78,8 @@ const fs   = require("fs");
 const path = require("path");
 
 function fmt(n){ return (+n || 0).toFixed(2); }
+function pad(val, len){ return String(val).padStart(len, " "); }
+
 
 /* ===== READ company.json ===== */
 let company = {};
@@ -140,10 +142,10 @@ ipcRenderer.on("invoice-data", (e, sale) => {
 
       <table>
         <tr>
-          <th class="left">Item</th>
-          <th class="right">Qty</th>
-          <th class="right">Rate</th>
-          <th class="right">Amt</th>
+          <th class="left"  style="width:33mm">Item</th>
+          <th class="right" style="width:7mm">Qty</th>
+          <th class="right" style="width:12mm">Rate</th>
+          <th class="right" style="width:14mm">Amt</th>
         </tr>
   `;
 
@@ -164,11 +166,11 @@ ipcRenderer.on("invoice-data", (e, sale) => {
     gstPercent = gst;
 
     html += `
-      <tr>
-        <td class="item">${i.name} (${gst}%)</td>
-        <td class="qty">${fmt(qty)}</td>
-        <td class="rate">${fmt(rate)}</td>
-        <td class="amt">${fmt(amt)}</td>
+       <tr>
+        <td class="item">${i.name}<br>(${gst}%)</td>
+        <td class="qty">${pad(fmt(qty), 4)}</td>
+        <td class="rate">${pad(fmt(rate), 7)}</td>
+        <td class="amt">${pad(fmt(amt), 8)}</td>
       </tr>
     `;
   });

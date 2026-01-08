@@ -23,8 +23,9 @@ body {
   box-sizing: border-box;
 }
 
+/* ---------- HEADER ---------- */
 .company-title {
-  font-size: 15px;      /* PHOTO jaisa */
+  font-size: 15px;
   font-weight: 800;
   letter-spacing: 0.5px;
 }
@@ -34,19 +35,22 @@ body {
 .right  { text-align: right; }
 .small  { font-size: 11px; }
 
+/* ---------- LINES ---------- */
 hr {
   border: none;
   border-top: 1px dashed #000;
-  margin: 5px 0;
+  margin: 6px 0;
 }
 
+/* ---------- TABLE ---------- */
 table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 th, td {
-  padding: 3px 0;
+  padding: 2px 0;
   font-size: 12px;
 }
 
@@ -54,10 +58,11 @@ th {
   border-bottom: 1px dashed #000;
 }
 
-td.item { width: 38mm; }
-td.qty  { width: 8mm; text-align: right; }
-td.rate { width: 10mm; text-align: right; }
-td.amt  { width: 14mm; text-align: right; }
+/* 🔥 COLUMN CONTROL (THIS FIXES CHIPAKNA) */
+td.item { width: 33mm; }
+td.qty  { width: 7mm;  text-align: right; white-space: pre; }
+td.rate { width: 12mm; text-align: right; white-space: pre; padding-right: 2mm; }
+td.amt  { width: 14mm; text-align: right; white-space: pre; padding-left: 1mm; }
 
 .spacer {
   height: 8mm;
@@ -73,9 +78,11 @@ const { ipcRenderer } = require("electron");
 const fs   = require("fs");
 const path = require("path");
 
+/* ---------- HELPERS ---------- */
 function fmt(n){ return (+n || 0).toFixed(2); }
+function pad(val, len){ return String(val).padStart(len, " "); }
 
-/* ===== READ company.json ===== */
+/* ---------- READ company.json ---------- */
 let company = {};
 try {
   const p = path.join(__dirname, "data", "company.json");
@@ -91,9 +98,9 @@ ipcRenderer.on("invoice-data", (e, sale) => {
 
   let html = `
     <div>
-      <div class="center company-title">${company.company_name}</div>
-      <div class="center small">${company.company_address}</div>
-      <div class="center small">📞 ${company.contact_number}</div>
+      <div class="center company-title">${company.company_name || ""}</div>
+      <div class="center small">${company.company_address || ""}</div>
+      <div class="center small">${company.contact_number || ""}</div>
       <div class="center small">GSTIN: ${company.company_gstin || "N/A"}</div>
 
       <hr>
@@ -105,10 +112,10 @@ ipcRenderer.on("invoice-data", (e, sale) => {
 
       <table>
         <tr>
-          <th class="left">Item</th>
-          <th class="right">Qty</th>
-          <th class="right">Rate</th>
-          <th class="right">Amt</th>
+          <th class="left"  style="width:33mm">Item</th>
+          <th class="right" style="width:7mm">Qty</th>
+          <th class="right" style="width:12mm">Rate</th>
+          <th class="right" style="width:14mm">Amt</th>
         </tr>
   `;
 
@@ -117,11 +124,11 @@ ipcRenderer.on("invoice-data", (e, sale) => {
   let gstValue = 0;
 
   sale.items.forEach(i => {
-    const qty = +i.qty || 0;
+    const qty  = +i.qty || 0;
     const rate = +i.price || 0;
     const gst  = +i.gst_percent || 0;
 
-    const amt = qty * rate;
+    const amt  = qty * rate;
     const base = rate / (1 + gst/100);
 
     total += amt;
@@ -130,10 +137,10 @@ ipcRenderer.on("invoice-data", (e, sale) => {
 
     html += `
       <tr>
-        <td class="item">${i.name} (${gst}%)</td>
-        <td class="qty">${fmt(qty)}</td>
-        <td class="rate">${fmt(rate)}</td>
-        <td class="amt">${fmt(amt)}</td>
+        <td class="item">${i.name}<br>(${gst}%)</td>
+        <td class="qty">${pad(fmt(qty), 4)}</td>
+        <td class="rate">${pad(fmt(rate), 7)}</td>
+        <td class="amt">${pad(fmt(amt), 8)}</td>
       </tr>
     `;
   });
@@ -143,10 +150,9 @@ ipcRenderer.on("invoice-data", (e, sale) => {
 
       <hr>
       <div class="right"><b>Total: ₹${fmt(total)}</b></div>
-      <div class="center small">Payment Mode: Cash</div>
+      <div class="center small">Payment Mode: ${sale.paymentMode || "Cash"}</div>
 
       <hr>
-
       <div class="center small"><b>GST Summary</b></div>
       <div class="center small">
         ${gstPercent}% → ₹${fmt(gstValue)}<br>
