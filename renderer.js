@@ -1107,7 +1107,7 @@ async function confirmPayment() {
   const totalTxt = (document.getElementById("total")?.innerText || "0").toString().trim();
   const total = isNaN(+totalTxt) ? totalTxt : (+totalTxt).toFixed(2);
 
-  // 🔹 1) Read sale_prefix
+  // 🔹 1) Read sale_prefix from company.json
   let salePrefix = "";
   try {
     const companyPath = path.join(dataDir, "company.json");
@@ -1116,7 +1116,7 @@ async function confirmPayment() {
       if (raw) {
         const json = JSON.parse(raw);
         const companyObj = Array.isArray(json) ? json[0] : json;
-        salePrefix = companyObj?.sale_prefix?.trim() || "";
+        salePrefix = (companyObj?.sale_prefix || "").toString().trim();
       }
     }
   } catch (err) {
@@ -1142,10 +1142,34 @@ async function confirmPayment() {
     sales = [];
   }
 
-  // 🔹 3) Determine invoice number
-  let lastNum = 10000;
+  // 🔹 3) Read config.json (READ-ONLY here) to use only if sales file is empty
+  const configPath = path.join(dataDir, "config.json");
+  let config = {};
   try {
-    const nums = sales.map(s => {
+    if (fs.existsSync(configPath)) {
+      const rawCfg = fs.readFileSync(configPath, "utf8").trim();
+      if (rawCfg) config = JSON.parse(rawCfg);
+    }
+  } catch (e) {
+    console.error("config.json read error:", e);
+    config = {};
+  }
+
+  // 🔹 4) Determine invoice sequence
+  let baseNum = 10000;
+  if (sales.length === 0) {
+    // Sales file empty -> prefer config.lastPushedId (if valid), else use baseNum
+    if (config && config.lastPushedId != null) {
+      const rawId = String(config.lastPushedId);
+      let numericPart = rawId;
+      if (salePrefix && rawId.startsWith(salePrefix)) numericPart = rawId.slice(salePrefix.length);
+      const m = numericPart.match(/(\d+)$/);
+      const parsed = m ? parseInt(m[1], 10) : NaN;
+      if (Number.isFinite(parsed)) baseNum = parsed;
+    }
+  } else {
+    // Sales exist -> compute max numeric suffix from sales and use it
+    const nums = sales.map((s) => {
       let id = (s && s.id) ? String(s.id) : "";
       if (!id) return null;
       if (salePrefix && id.startsWith(salePrefix)) id = id.slice(salePrefix.length);
@@ -1154,57 +1178,37 @@ async function confirmPayment() {
       return Number.isFinite(num) ? num : null;
     }).filter(n => n !== null);
 
-    if (nums.length) lastNum = Math.max(...nums);
-  } catch (e) {
-    console.error("invoice parse error:", e);
+    if (nums.length) baseNum = Math.max(...nums);
   }
 
-  const invoiceNo = `${salePrefix}${lastNum + 1}`;
+  const nextSeq = baseNum + 1;
+  const invoiceNo = `${salePrefix}${nextSeq}`;
 
-// 🔹 4) Build sale data (with GST info)
-// const saleData = {
-//   id: invoiceNo,
-//   date: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
-//   items: Array.isArray(cart)
-//     ? cart.map(item => ({
-//         id: item.id || null,
-//         name: item.name || "",
-//         qty: +item.qty || 0,
-//         price: +item.price || 0,
-//         gst_percent: +item.gst_percent || 0, // 👈 ensure GST percent is saved
-//         total: (+item.qty || 0) * (+item.price || 0)
-//       }))
-//     : [],
-//   total: +total || 0,
-//   paymentMode: mode,
-//   sale_prefix: salePrefix,
-  // };
-  
+  // 🔹 5) Build sale data
+  const saleData = {
+    id: invoiceNo,
+    cust_name: document.getElementById("cust-name")?.value || "",
+    cust_mobile: document.getElementById("cust-mobile")?.value || "",
+    cust_address: document.getElementById("cust-address")?.value || "",
+    cust_gstin: document.getElementById("cust-gstin")?.value || "",
+    date: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
+    items: Array.isArray(cart)
+      ? cart.map((item) => ({
+          id: item.id || null,
+          gst_percent: item.gst_percent || null,
+          name: item.name || "",
+          qty: +item.qty || 0,
+          price: +item.price || 0,
+          // gst_percent: +item.gst_percent || 0,
+          total: (+item.qty || 0) * (+item.price || 0),
+        }))
+      : [],
+    total: +total || 0,
+    paymentMode: mode,
+    sale_prefix: salePrefix,
+  };
 
-const saleData = {
-  id: invoiceNo,
-  cust_name: document.getElementById("cust-name")?.value || "",
-  cust_mobile: document.getElementById("cust-mobile")?.value || "",
-  cust_address: document.getElementById("cust-address")?.value || "",
-  cust_gstin: document.getElementById("cust-gstin")?.value || "",
-  date: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
-  items: Array.isArray(cart)
-    ? cart.map((item) => ({
-        id: item.id || null,
-        name: item.name || "",
-        qty: +item.qty || 0,
-        price: +item.price || 0,
-        gst_percent: +item.gst_percent || 0,
-        total: (+item.qty || 0) * (+item.price || 0),
-      }))
-    : [],
-  total: +total || 0,
-  paymentMode: mode,
-  sale_prefix: salePrefix,
-};
-
-
-  // 🔹 5) Save sale
+  // 🔹 6) Save sale (append to sales file)
   try {
     const dir = path.dirname(saleFile);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -1216,10 +1220,13 @@ const saleData = {
     return;
   }
 
-  // 🔹 6) Print invoice
+  // NOTE: Intentionally NOT updating config.json.lastPushedId here.
+  // Another function (server push) is responsible for pulling/updating lastPushedId.
+
+  // 🔹 7) Print invoice
   try { doPrint(saleData); } catch (e) { console.error("printInvoice error:", e); }
 
-  // 🔹 7) Clear cart + close modal
+  // 🔹 8) Clear cart + close modal
   cart = [];
   renderCart();
   try {
@@ -1227,15 +1234,13 @@ const saleData = {
     if (modal) modal.hide();
   } catch (e) {}
 
-  // 🔹 8) Update Hold Status
- try {
+  // 🔹 9) Update Hold Status
+  try {
     await updateSelectedHolds();
   } catch (err) {
     console.error("❌ Failed to update hold status:", err);
   }
-
 }
-
 
 async function updateSelectedHolds() {
   if (!selectedTokens || selectedTokens.size === 0) {
@@ -1631,6 +1636,8 @@ async function pullTokens(showLoader = true) {
           total: total.toFixed(2),
           items: h.items.map((i) => ({
             name: i.item_name,
+            id: i.item_id,
+            gst_percent: i.gst_percent,
             qty: parseFloat(i.qty),
             price: parseFloat(i.rate),
             token_no: h.hold.token_no,
