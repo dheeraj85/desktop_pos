@@ -1,245 +1,172 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Invoice Only (Same UI as invoice.html)</title>
-  <style>
-    @media print {
-      @page { size: 3in auto; margin: 0; }
-      body { margin: 0; padding: 0; }
-    }
-    body {
-      font-family: monospace;
-      font-size: 14px;
-      width: 3in;
-      margin: 0 auto;
-      padding: 0;
-    }
-    .center { text-align: center; font-weight: bold; }
-    .right { text-align: right; }
-    .left { text-align: left; }
-    .small { font-size: 12px; }
-    hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
+<meta charset="UTF-8">
+<title>Invoice</title>
 
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 2px 3px; }
-    th { border-bottom: 1px dashed #000; font-size: 13px; }
+<style>
+@media print {
+  @page { size: 80mm auto; margin: 0; }
+  body { margin: 0; padding: 0; }
+}
 
-    td.item { text-align: left; width: 45%; }
-    td.qty  { text-align: right; width: 15%; }
-    td.rate { text-align: right; width: 20%; }
-    td.amt  { text-align: right; width: 20%; }
+* {
+  color: #000 !important;
+  background: transparent !important;
+}
 
-    /* add a slightly taller bottom margin so cutter clears content */
-    .slip-padding-end { height: 8mm; }
-  </style>
+body {
+  font-family: monospace;
+  font-size: 12px;
+  width: 72mm;
+  padding: 4px;
+  box-sizing: border-box;
+}
+
+/* ---------- HEADER ---------- */
+.company-title {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.center { text-align: center; font-weight: bold; }
+.left   { text-align: left; }
+.right  { text-align: right; }
+.small  { font-size: 11px; }
+
+/* ---------- LINES ---------- */
+hr {
+  border: none;
+  border-top: 1px dashed #000;
+  margin: 6px 0;
+}
+
+/* ---------- TABLE ---------- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+th, td {
+  padding: 2px 0;
+  font-size: 12px;
+}
+
+th {
+  border-bottom: 1px dashed #000;
+}
+
+/* 🔥 COLUMN CONTROL (THIS FIXES CHIPAKNA) */
+td.item { width: 33mm; }
+td.qty  { width: 7mm;  text-align: right; white-space: pre; }
+td.rate { width: 12mm; text-align: right; white-space: pre; padding-right: 2mm; }
+td.amt  { width: 14mm; text-align: right; white-space: pre; padding-left: 1mm; }
+
+.spacer {
+  height: 8mm;
+}
+</style>
 </head>
+
 <body>
-  <!-- We will swap this content between KOT and Invoice -->
-  <div id="print-root"></div>
+<div id="print-root"></div>
 
-  <script>
-    // Electron renderer context (Node enabled)
-    const fs = require("fs");
-    const path = require("path");
+<script>
+const { ipcRenderer } = require("electron");
+const fs   = require("fs");
+const path = require("path");
 
-    // ---- Read company.json safely ----
-      const dataDir = path.join(__dirname, "data");
-  const companyPath = path.join(dataDir, "company.json");
-    let company = {};
-    try {
-      const data = fs.readFileSync(companyPath, "utf-8");
-      const json = JSON.parse(data);
-      company = Array.isArray(json) ? json[0] : json;
-    } catch (err) {
-      console.error("❌ Error reading company.json:", err);
-    }
+/* ---------- HELPERS ---------- */
+function fmt(n){ return (+n || 0).toFixed(2); }
+function pad(val, len){ return String(val).padStart(len, " "); }
 
-    // ---- Helpers ----
-    const root = document.getElementById("print-root");
-    const fmt = (n) => (isNaN(+n) ? "0.00" : (+n).toFixed(2));
+/* ---------- READ company.json ---------- */
+let company = {};
+try {
+  const p = path.join(__dirname, "data", "company.json");
+  const json = JSON.parse(fs.readFileSync(p, "utf8"));
+  company = Array.isArray(json) ? json[0] : json;
+} catch (e) {}
 
-    // Optional: if you later add QZ-Tray, you can send a partial cut here.
-    // Keep it no-op for now so nothing breaks.
-    async function sendPartialCutIfAvailable() {
-      try {
-        // Example for QZ-Tray (requires proper setup & a printer config):
-        // if (window.qz?.websocket?.isActive()) {
-        //   const cfg = qz.configs.create("YOUR_PRINTER_NAME");
-        //   const data = [{ type: 'raw', format: 'hex', data: '1D5601' }]; // GS V 1 = partial cut
-        //   await qz.print(cfg, data);
-        // }
-      } catch (e) {
-        console.warn("Partial cut command skipped:", e);
-      }
-    }
+ipcRenderer.on("invoice-data", (e, sale) => {
 
-    function buildKOTHTML(saleData, dateStr, tokenNo, tableNo) {
-      let kotHTML = `
-        <div class="kot-slip">
-          <div class="center">KOT - ${company.company_name || "Restaurant"}</div>
-          <div class="small">Date: ${dateStr}</div>
-          <div class="small">Token: #${tokenNo}</div>                         
-          <hr>
-          <table>
-            <thead>
-              <tr>
-                <th class="left">Item</th>
-                <th class="qty">Qty</th>
-              </tr>
-            </thead>
-            <tbody>
-      `;
+  const root = document.getElementById("print-root");
+  const dateStr = new Date().toLocaleString("en-IN");
+  const invoiceNo = sale.id;
 
-      saleData.items.forEach(item => {
-        kotHTML += `
-          <tr>
-            <td class="item">${item.name || ""}</td>
-            <td class="qty">${fmt(item.qty || 0)}</td>
-          </tr>`;
-      });
-
-      kotHTML += `
-            </tbody>
-          </table>
-          <hr>
-        
-          <div class="slip-padding-end"></div>
-        </div>
-      `;
-      return kotHTML;
-    }
-
-    
-function buildInvoiceHTML(saleData, dateStr, tokenNo, tableNo) {
-  let billHTML = `
-    <div class="bill-slip">
-      <table style="width:100%; text-align:center;">
-        <tr>
-          <td>
-            <b style="font-size:16px;">${company.company_name || "Company Name"}</b><br>
-            <label style="font-size:11px;">
-              ${company.company_address || ""}<br>
-              &#9742; ${company.contact_number || ""}<br>
-              GSTIN: ${company.company_gstin || "N/A"} <br>
-              FSSAI No: ${company.fssai_no || "N/A"}
-            </label>
-          </td>
-        </tr>
-      </table>
+  let html = `
+    <div>
+      <div class="center company-title">${company.company_name || ""}</div>
+      <div class="center small">${company.company_address || ""}</div>
+      <div class="center small">${company.contact_number || ""}</div>
+      <div class="center small">GSTIN: ${company.company_gstin || "N/A"}</div>
 
       <hr>
-      <div class="small">
-        <b>Date:</b> ${saleData.date || dateStr}<br>
-        <b>Invoice:</b> ${saleData.id || ("INV" + tokenNo)}<br>
-      </div>
-  `;
 
-  // ✅ Customer Info (only if provided)
-  if (
-    saleData.cust_name ||
-    saleData.cust_mobile ||
-    saleData.cust_gstin ||
-    saleData.cust_address
-  ) {
-    billHTML += `
-      <hr>
-      <div class="small">
-        <b>Customer Details:</b><br>
-        ${saleData.cust_name ? `Name: ${saleData.cust_name}<br>` : ""}
-        ${saleData.cust_mobile ? `Mobile: ${saleData.cust_mobile}<br>` : ""}
-        ${saleData.cust_gstin ? `GSTIN: ${saleData.cust_gstin}<br>` : ""}
-        ${saleData.cust_address ? `Address: ${saleData.cust_address}<br>` : ""}
-      </div>
-    `;
-  }
+      <div class="small">Date: ${dateStr}</div>
+      <div class="small">Invoice: ${invoiceNo}</div>
 
-  billHTML += `
       <hr>
+
       <table>
-        <thead>
-          <tr>
-            <th class="left">Item</th>
-            <th class="qty">Qty</th>
-            <th class="rate">Rate</th>
-            <th class="amt">Amt</th>
-          </tr>
-        </thead>
-        <tbody>
+        <tr>
+          <th class="left"  style="width:33mm">Item</th>
+          <th class="right" style="width:7mm">Qty</th>
+          <th class="right" style="width:12mm">Rate</th>
+          <th class="right" style="width:14mm">Amt</th>
+        </tr>
   `;
 
-  let computedTotal = 0;
-  let gstMap = {}; // for GST summary
+  let total = 0;
+  let gstPercent = 0;
+  let gstValue = 0;
 
-  saleData.items.forEach(item => {
-    const qty = +item.qty || 0;
-    const rateInclusive = +item.price || 0;
-    const gstPercent = +item.gst_percent || 0;
+  sale.items.forEach(i => {
+    const qty  = +i.qty || 0;
+    const rate = +i.price || 0;
+    const gst  = +i.gst_percent || 0;
 
-    const baseRate = rateInclusive / (1 + gstPercent / 100);
-    const amtBase = baseRate * qty;
-    const gstValue = amtBase * (gstPercent / 100);
-    const amtTotal = amtBase + gstValue;
+    const amt  = qty * rate;
+    const base = rate / (1 + gst/100);
 
-    computedTotal += amtTotal;
-    gstMap[gstPercent] = (gstMap[gstPercent] || 0) + amtBase;
+    total += amt;
+    gstValue += (rate - base) * qty;
+    gstPercent = gst;
 
-    billHTML += `
+    html += `
       <tr>
-        <td class="item">${item.name || ""} (${gstPercent}%)</td>
-        <td class="qty">${fmt(qty)}</td>
-        <td class="rate">${fmt(rateInclusive)}</td>
-        <td class="amt">${fmt(amtTotal)}</td>
-      </tr>`;
+        <td class="item">${i.name}<br>(${gst}%)</td>
+        <td class="qty">${pad(fmt(qty), 4)}</td>
+        <td class="rate">${pad(fmt(rate), 7)}</td>
+        <td class="amt">${pad(fmt(amt), 8)}</td>
+      </tr>
+    `;
   });
 
-  const finalTotal = saleData.total != null ? +saleData.total : computedTotal;
-
-  billHTML += `
-        </tbody>
+  html += `
       </table>
 
       <hr>
-      <div class="right"><b>Total: ₹${fmt(finalTotal)}</b></div>
-      <div class="center small">Payment Mode: ${saleData.paymentMode || "Cash"}</div>
-  `;
+      <div class="right"><b>Total: ₹${fmt(total)}</b></div>
+      <div class="center small">Payment Mode: ${sale.paymentMode || "Cash"}</div>
 
-  // ✅ GST Summary - only if applicable
-  if (Object.keys(gstMap).length > 0) {
-    billHTML += `<hr><div class="center small"><b>GST Summary:</b><br>`;
-    let totalGSTValue = 0;
-    for (const [gstPercent, taxableAmt] of Object.entries(gstMap)) {
-      const gstValue = (taxableAmt * gstPercent) / 100;
-      totalGSTValue += gstValue;
-      billHTML += `${gstPercent}% → ₹${fmt(gstValue)}<br>`;
-    }
-    billHTML += `<b>Total GST: ₹${fmt(totalGSTValue)}</b></div>`;
-  }
+      <hr>
+      <div class="center small"><b>GST Summary</b></div>
+      <div class="center small">
+        ${gstPercent}% → ₹${fmt(gstValue)}<br>
+        <b>Total GST: ₹${fmt(gstValue)}</b>
+      </div>
 
-  billHTML += `
       <hr>
       <div class="center">Thank You! Visit Again 🙏</div>
-      <div class="slip-padding-end"></div>
+      <div class="spacer"></div>
     </div>
   `;
-  return billHTML;
-}
-   
-    // ---- Entry point: invoice-only (UI identical to invoice.html) ----
-    window.addEventListener("message", (event) => {
-      const saleData = event.data;
-      if (!saleData || !Array.isArray(saleData.items)) return;
 
-      const now = new Date();
-      const dateStr = saleData.date || now.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
-      const tokenNo = saleData.id ? String(saleData.id).replace(/\D/g, "") : Math.floor(Math.random() * 900 + 100);
-      const tableNo = saleData.table || "10";
-
-      const invoiceHTML = buildInvoiceHTML(saleData, dateStr, tokenNo, tableNo);
-      root.innerHTML = invoiceHTML;
-      setTimeout(() => window.print(), 50);
-    });
-
-  </script>
+  root.innerHTML = html;
+});
+</script>
 </body>
 </html>

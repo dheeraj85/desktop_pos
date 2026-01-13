@@ -12,22 +12,24 @@
   "build": {
     "appId": "com.anukool.pos",
     "productName": "Anukool POS",
-    "asar": false,                       
+    "asar": false,
     "directories": {
       "buildResources": "build",
       "output": "dist"
     },
     "files": [
-      "main.js",                      
-      "electron/**/*",                 
-      "dist/**/*",                     
+      "main.js",
+      "electron/**/*",
+      "dist/**/*",
       "data/**/*",
       "package.json",
       "!**/*.map",
       "!node_modules/.cache/**"
     ],
     "win": {
-      "target": ["nsis"],                
+      "target": [
+        "nsis"
+      ],
       "icon": "build/anukool_logo.ico"
     },
     "nsis": {
@@ -42,5 +44,9 @@
   "devDependencies": {
     "electron": "latest",
     "electron-builder": "latest"
+  },
+  "dependencies": {
+    "escpos": "^3.0.0-alpha.6",
+    "escpos-usb": "^3.0.0-alpha.4"
   }
 }

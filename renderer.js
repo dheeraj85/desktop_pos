@@ -10,13 +10,25 @@ const saleFile    = path.join(dataDir, "saleData.json");
 const holdFile    = path.join(dataDir, "holdData.json");
 
 
-
-
 let products = [];
 let categories = [];
 let companyDetail = [];
 let paymentModes = [];
 let cart = [];
+
+// 🔒 Disable browser print completely
+window.print = () => {
+  console.warn("window.print blocked");
+};
+
+
+document.addEventListener("keydown", (e) => {
+  if (e.ctrlKey && e.key.toLowerCase() === "p") {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  }
+});
 
 
 const ItemPage = {
@@ -652,6 +664,22 @@ function filterProducts() {
 }
 
 
+function setButtonLoading(btn, loading) {
+  if (!btn) return;
+
+  const spinner = btn.querySelector(".btn-spinner");
+  const text = btn.querySelector(".btn-text");
+
+  if (loading) {
+    btn.disabled = true;
+    spinner?.classList.remove("d-none");
+    text?.classList.add("d-none");
+  } else {
+    btn.disabled = false;
+    spinner?.classList.add("d-none");
+    text?.classList.remove("d-none");
+  }
+}
 // function handleSearchKey(e) {
 //   if (e.key === "Enter") {
 //     e.preventDefault();
@@ -1220,11 +1248,11 @@ async function confirmPayment() {
     return;
   }
 
-  // NOTE: Intentionally NOT updating config.json.lastPushedId here.
-  // Another function (server push) is responsible for pulling/updating lastPushedId.
-
-  // 🔹 7) Print invoice
-  try { doPrint(saleData); } catch (e) { console.error("printInvoice error:", e); }
+try {
+  await doPrint(saleData);   
+} catch (e) {
+  console.error("printInvoice error:", e);
+}
 
   // 🔹 8) Clear cart + close modal
   cart = [];
@@ -1245,7 +1273,7 @@ async function confirmPayment() {
 async function updateSelectedHolds() {
   if (!selectedTokens || selectedTokens.size === 0) {
     console.warn("⚠️ No tokens selected to update");
-    showMessage("⚠️ No tokens selected to update!");
+    // showMessage("⚠️ No tokens selected to update!");
     return;
   }
 
@@ -1347,13 +1375,25 @@ function printInvoiceOnly(saleData) {
 }
 
 // Unified print selector (keeps existing flow intact)
+// function doPrint(saleData) {
+//   if (window.__invoiceOnlyFlow) {
+//     window.__invoiceOnlyFlow = false;       // reset flag for next time
+//     return printInvoiceOnly(saleData);      // ✅ invoice-only route
+//   }
+//   return printInvoice(saleData);            // 🟢 existing KOT + invoice route
+// }
+
 function doPrint(saleData) {
+  const { ipcRenderer } = require("electron");
+
+  // invoice only ya invoice + KOT
   if (window.__invoiceOnlyFlow) {
-    window.__invoiceOnlyFlow = false;       // reset flag for next time
-    return printInvoiceOnly(saleData);      // ✅ invoice-only route
+    return ipcRenderer.invoke("print-invoice-only", saleData);
+  } else {
+    return ipcRenderer.invoke("print-invoice", saleData);
   }
-  return printInvoice(saleData);            // 🟢 existing KOT + invoice route
 }
+
 
 
 loadData();
@@ -1744,7 +1784,7 @@ function toggleTokenSelection(holdId) {
 
 
 function loadSelectedTokensToCart() {
-  cart = []; // clear old cart
+  cart = [];
   selectedTokens.forEach((tokenId) => {
     const hold = currentHolds.find((h) => h.id === tokenId);
     if (hold) {
@@ -1779,6 +1819,7 @@ function loadTokenToCart(tokenId) {
 
 
 //---------------TOKEN PULL END ------------------//
+
 
 
 
@@ -1881,24 +1922,65 @@ function buildCurrentSaleDataInline(){
   };
 }
 
-function handlePrintOnly() {
+// function handlePrintOnly() {
+//   if (!cart || cart.length === 0) {
+//     showMessage("🛒 Cart is empty!");
+//     return;
+//   }
+//   window.__invoiceOnlyFlow = true;  
+//   confirmPayment();                 
+// }
+
+// // Print with KOT using existing flow (main -> invoice.html)
+// function handlePrintWithKot() {
+//   if (!cart || cart.length === 0) {
+//     showMessage("🛒 Cart is empty!");
+//     return;
+//   }
+//   confirmPayment();
+// }
+
+async function handlePrintOnly() {
   if (!cart || cart.length === 0) {
     showMessage("🛒 Cart is empty!");
     return;
   }
-  window.__invoiceOnlyFlow = true;  
-  confirmPayment();                 
+
+  const btn = document.getElementById("btnPrintOnly");
+
+  try {
+    setButtonLoading(btn, true);     // 🔄 spinner ON
+    window.__invoiceOnlyFlow = true;
+    await confirmPayment();          // ⏳ wait till print completes
+  } catch (err) {
+    console.error("Print Invoice Only failed:", err);
+    showMessage("❌ Printing failed");
+  } finally {
+    setButtonLoading(btn, false);    // ✅ spinner OFF
+  }
 }
 
-// Print with KOT using existing flow (main -> invoice.html)
-function handlePrintWithKot() {
+
+// ================= Print with KOT =================
+async function handlePrintWithKot() {
   if (!cart || cart.length === 0) {
     showMessage("🛒 Cart is empty!");
     return;
   }
-  confirmPayment();
-}
 
+  const btn = document.getElementById("btnPrintKOT");
+
+  try {
+    setButtonLoading(btn, true);     // 🔄 spinner ON
+    window.__invoiceOnlyFlow = false;
+    await confirmPayment();          // ⏳ wait till print completes
+  } catch (err) {
+    console.error("Print with KOT failed:", err);
+    showMessage("❌ Printing failed");
+  } finally {
+    setButtonLoading(btn, false);    // ✅ spinner OFF
+  }
+}
 
 // --- Patch confirmPayment to read inline radio without breaking anything ---
 (function patchConfirmPaymentToReadInline(){
