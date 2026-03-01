@@ -905,9 +905,15 @@ function renderCart() {
       <tr>
         <td>${c.name}</td>
         <td>
-          <input id="qty-${c.id}" type="number" min="0" step="any" value="${c.qty || 0}"
-            onchange="updateQty(${i}, this.value)"
-            class="form-control form-control-sm" style="width:70px">
+      <input
+  id="qty-${c.id}"
+  type="text"
+  inputmode="decimal"
+  value="${c.qty}"
+  oninput="updateQty(${i}, this.value)"
+  class="form-control form-control-sm"
+  style="width:70px">
+
         </td>
         <td>
           ${
@@ -1064,15 +1070,116 @@ function updatePrice(index, value) {
 }
 
 
+// ===============================
+// 🔥 SMART QTY ENGINE
+// ===============================
+
+const QTY_CONFIG = {
+  kg: 3,
+  kgs: 3,
+  gm: 0,
+  g: 0,
+  ltr: 2,
+  lt: 2,
+  ml: 0,
+  pcs: 0,
+  piece: 0
+};
+
+
+function normalizeScale(scale) {
+  return (scale || "")
+    .toString()
+    .trim()
+    .toLowerCase();
+}
+
+function getPrecision(scale) {
+  const normalized = normalizeScale(scale);
+  return QTY_CONFIG.hasOwnProperty(normalized)
+    ? QTY_CONFIG[normalized]
+    : 0; // default integer
+}
+
+function formatQtyByScale(rawValue, scale) {
+  let value = rawValue.toString().trim();
+
+  if (!/^\d*\.?\d*$/.test(value)) return "0";
+
+  const precision = getPrecision(scale);
+  let num = parseFloat(value);
+
+  if (isNaN(num) || num < 0) return "0";
+
+  if (precision === 0) {
+    return String(Math.round(num));
+  }
+
+  // limit decimals but DO NOT force trailing zeros
+  const parts = value.split(".");
+  if (parts.length === 2) {
+    parts[1] = parts[1].slice(0, precision);
+    return parts[0] + "." + parts[1];
+  }
+
+  return value;
+}
+
+
 // ========================
 // Qty Update Logic
 // ========================
 function updateQty(index, value) {
-  cart[index].qty = parseFloat(parseFloat(value).toFixed(3)) || 0; // 👈 qty bhi round off
-  renderCart();
+  if (!cart[index]) return;
+
+  const scale = cart[index].item_scale || "";
+
+  const formatted = formatQtyByScale(value, scale);
+
+  cart[index].qty = formatted;
+
+  updateCartTotals(); // 🔥 only update totals
 }
+
+function updateCartTotals() {
+  let totalQty = 0;
+  let totalAmount = 0;
+
+  cart.forEach((c, i) => {
+    const qty = parseFloat(c.qty) || 0;
+    const price = parseFloat(c.price) || 0;
+
+    const subtotal = qty * price;
+
+    totalQty += qty;
+    totalAmount += subtotal;
+
+    const row = document.querySelectorAll("#cart-items tr")[i];
+    if (row) {
+      const subtotalCell = row.children[3];
+      if (subtotalCell) {
+        subtotalCell.innerText = "₹" + subtotal.toFixed(2);
+      }
+    }
+  });
+
+  document.getElementById("qty").innerText = Math.round(totalQty);
+  document.getElementById("total").innerText = Math.round(totalAmount);
+}
+
+
 // ========================
 
+
+function focusItemCodeBox() {
+  setTimeout(() => {
+    const itemInput = document.getElementById("search-itemcode");
+    if (itemInput) {
+      itemInput.focus();
+      itemInput.select();
+    }
+  }, 200);
+}
 // Remove item
 // function removeItem(index) {
 //   cart.splice(index, 1);
@@ -1127,7 +1234,8 @@ function addToCart(id, focusQty = false) {
       qty: 1,
       rate_change_permission: product.rate_change_permission,
       gst_percent: product.gst_percent,
-      
+      category: product.category || "",
+      item_scale: product.item_scale || "",
     });
   }
 
@@ -1249,17 +1357,23 @@ async function confirmPayment() {
     cust_address: document.getElementById("cust-address")?.value || "",
     cust_gstin: document.getElementById("cust-gstin")?.value || "",
     date: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
-    items: Array.isArray(cart)
-      ? cart.map((item) => ({
-          id: item.id || null,
-          gst_percent: item.gst_percent || null,
-          name: item.name || "",
-          qty: +item.qty || 0,
-          price: +item.price || 0,
-          // gst_percent: +item.gst_percent || 0,
-          total: (+item.qty || 0) * (+item.price || 0),
-        }))
-      : [],
+ items: Array.isArray(cart)
+  ? cart.map((item) => {
+   const qtyNumber = parseFloat(item.qty) || 0;
+const price = parseFloat(item.price) || 0;
+return {
+  id: item.id || null,
+  gst_percent: item.gst_percent || null,
+  name: item.name || "",
+
+  qty: String(item.qty),  // 🔥 EXACT SAVE
+
+  price: price,
+  total: qtyNumber * price,
+  item_scale: item.item_scale || null,
+};
+    })
+  : [],
     total: +total || 0,
     paymentMode: mode,
     sale_prefix: salePrefix,
@@ -1286,6 +1400,7 @@ try {
   // 🔹 8) Clear cart + close modal
   cart = [];
   renderCart();
+  focusItemCodeBox();
   try {
     const modal = bootstrap.Modal.getInstance(document.getElementById("paymentModal"));
     if (modal) modal.hide();
@@ -1371,12 +1486,6 @@ async function updateSelectedHolds() {
     showMessage("❌ Failed to update selected holds!");
   }
 }
-
-
-
-
-
-
 
 
 function printInvoice(saleData) {
@@ -1707,9 +1816,11 @@ async function pullTokens(showLoader = true) {
             name: i.item_name,
             id: i.item_id,
             gst_percent: i.gst_percent,
-            qty: parseFloat(i.qty),
+            qty: String(i.qty),
             price: parseFloat(i.rate),
             token_no: h.hold.token_no,
+            rate_change_permission:i.rate_change_permission,
+            item_scale : i.item_scale
           })),
         };
       });

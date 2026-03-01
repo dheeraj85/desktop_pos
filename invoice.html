@@ -55,8 +55,8 @@ th {
 }
 
 td.item { width: 33mm; }
-td.qty  { width: 7mm;  text-align: right; white-space: pre; }
-td.rate { width: 12mm; text-align: right; white-space: pre; padding-right: 2mm; }
+td.qty  { width: 12mm; text-align: right; white-space: pre; }
+
 td.amt  { width: 14mm; text-align: right; white-space: pre; padding-left: 1mm; }
 
 .page-break {
@@ -77,8 +77,40 @@ const { ipcRenderer } = require("electron");
 const fs   = require("fs");
 const path = require("path");
 
+function fmtRate(n) {
+   return Math.round(+n || 0);   
+}
+
+function fmtQty(item) {
+  let q = String(item.qty ?? "").trim();
+
+  // 🔥 handle ".100" → "0.100"
+  if (q.startsWith(".")) {
+    q = "0" + q;
+  }
+
+  // 🔥 ensure 3 decimals if decimal exists
+  if (q.includes(".")) {
+    const num = parseFloat(q);
+    if (!isNaN(num)) {
+      return num.toFixed(3);   // "0.100"
+    }
+  }
+
+  // normal integer
+  return q === "" ? "0" : q;
+}
+
+
+function fmtAmt(n) {
+  return Math.round(+n || 0);   
+}
+
+function pad(val, len){
+  return String(val).padStart(len, " ");
+}
 function fmt(n){ return (+n || 0).toFixed(2); }
-function pad(val, len){ return String(val).padStart(len, " "); }
+//function pad(val, len){ return String(val).padStart(len, " "); }
 
 
 /* ===== READ company.json ===== */
@@ -116,7 +148,7 @@ ipcRenderer.on("invoice-data", (e, sale) => {
     html += `
       <tr>
         <td class="item">${i.name}</td>
-        <td class="qty">${fmt(i.qty)}</td>
+        <td class="qty">${pad(fmtQty(i), 6)}</td>
       </tr>
     `;
   });
@@ -144,7 +176,7 @@ ipcRenderer.on("invoice-data", (e, sale) => {
         <tr>
           <th class="left"  style="width:33mm">Item</th>
           <th class="right" style="width:7mm">Qty</th>
-          <th class="right" style="width:12mm">Rate</th>
+     
           <th class="right" style="width:14mm">Amt</th>
         </tr>
   `;
@@ -154,42 +186,47 @@ ipcRenderer.on("invoice-data", (e, sale) => {
   let gstValue = 0;
 
   sale.items.forEach(i => {
+ const qtyNum = parseFloat(i.qty) || 0;   // for math only
+const rate   = parseFloat(i.price) || 0;
+const gst    = +i.gst_percent || 0;
     const qty = +i.qty || 0;
-    const rate = +i.price || 0;
-    const gst  = +i.gst_percent || 0;
+const amt    = qtyNum * rate;
 
-    const amt = qty * rate;
+   
     const base = rate / (1 + gst/100);
 
     total += amt;
     gstValue += (rate - base) * qty;
     gstPercent = gst;
+const scale = i.item_scale || "";   // e.g. kg / gm / pcs
 
-    html += `
-       <tr>
-        <td class="item">${i.name}<br>(${gst}%)</td>
-        <td class="qty">${pad(fmt(qty), 4)}</td>
-        <td class="rate">${pad(fmt(rate), 7)}</td>
-        <td class="amt">${pad(fmt(amt), 8)}</td>
-      </tr>
-    `;
+html += `
+  <tr>
+    <td class="item">
+      ${i.name}<br>
+      (GST${gst}% Rate ₹${fmtRate(rate)})
+    </td>
+   <td class="qty">
+  ${pad(fmtQty(i), 6)}<br>${scale}
+</td>
+<td class="amt">${pad(fmtAmt(amt), 8)}</td>
+  </tr>
+`;
+
   });
 
   html += `
       </table>
-      <hr>
-      <div class="right"><b>Total: ₹${fmt(total)}</b></div>
-      <div class="center small">Payment Mode: Cash</div>
-      <hr>
-
-      <!-- GST SUMMARY -->
-      <div class="center small"><b>GST Summary</b></div>
-      <div class="small center">
-        ${gstPercent}% → ₹${fmt(gstValue)}<br>
-        <b>Total GST: ₹${fmt(gstValue)}</b>
-      </div>
 
       <hr>
+      <div class="right"><b>Total: ₹${fmtAmt(total)}</b></div>
+      <div class="center small">Payment Mode: ${sale.paymentMode || "Cash"}</div>
+
+     
+
+      <hr>
+        <div class="center small">Rates are inclusive of all taxes
+          </div>
       <div class="center">Thank You! Visit Again 🙏</div>
       <div class="spacer"></div>
     </div>
