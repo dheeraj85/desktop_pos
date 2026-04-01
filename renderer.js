@@ -1006,27 +1006,55 @@ function showToast(message) {
 }
 // Price Update Logic
 // ========================
+// function updatePrice(index, value) {
+//   let input = value.toString().trim();
+
+//   if (cart[index].rate_change_permission == 1) {
+//     if (input.startsWith(".")) {
+//       let newPrice = parseFloat(input.substring(1)) || 0;
+//       cart[index].price = newPrice;
+//       if (!cart[index].qty || cart[index].qty <= 0) {
+//         cart[index].qty = 1;
+//       }
+//     } else {
+//       let totalAmount = parseFloat(input) || 0;
+//       let basePrice = parseFloat(cart[index].mrp) || parseFloat(cart[index].price);
+//       if (basePrice > 0) {
+//         let newQty = totalAmount / basePrice;
+//         cart[index].qty = parseFloat(newQty.toFixed(3));
+//         cart[index].price = basePrice;
+//       }
+//     }
+//   } else {
+//     cart[index].price = parseFloat(value) || 0;
+//     if (!cart[index].qty || cart[index].qty <= 0) {
+//       cart[index].qty = 1;
+//     }
+//   }
+
+//   renderCart();
+// }
+
+
 function updatePrice(index, value) {
-  let input = value.toString().trim();
+  if (!cart[index]) return;
+
+  let price = parseFloat(value);
+
+  if (isNaN(price) || price < 0) {
+    price = 0;
+  }
 
   if (cart[index].rate_change_permission == 1) {
-    if (input.startsWith(".")) {
-      let newPrice = parseFloat(input.substring(1)) || 0;
-      cart[index].price = newPrice;
-      if (!cart[index].qty || cart[index].qty <= 0) {
-        cart[index].qty = 1;
-      }
-    } else {
-      let totalAmount = parseFloat(input) || 0;
-      let basePrice = parseFloat(cart[index].mrp) || parseFloat(cart[index].price);
-      if (basePrice > 0) {
-        let newQty = totalAmount / basePrice;
-        cart[index].qty = parseFloat(newQty.toFixed(3)); 
-        cart[index].price = basePrice;
-      }
+    cart[index].price = price;
+
+    // qty empty ho to default 1
+    if (!cart[index].qty || cart[index].qty <= 0) {
+      cart[index].qty = 1;
     }
-  } else {
-    cart[index].price = parseFloat(value) || 0;
+  } 
+  else {
+    cart[index].price = price;
     if (!cart[index].qty || cart[index].qty <= 0) {
       cart[index].qty = 1;
     }
@@ -1034,6 +1062,7 @@ function updatePrice(index, value) {
 
   renderCart();
 }
+
 
 // ========================
 // Qty Update Logic
