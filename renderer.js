@@ -1277,13 +1277,8 @@ async function confirmPayment() {
     return;
   }
 
-  // NOTE: Intentionally NOT updating config.json.lastPushedId here.
-  // Another function (server push) is responsible for pulling/updating lastPushedId.
-
-  // 🔹 7) Print invoice
-// 🔹 7) Print invoice (WAIT till print completes)
 try {
-  await doPrint(saleData);   // ⭐ YAHI MAIN FIX HAI
+  await doPrint(saleData);   
 } catch (e) {
   console.error("printInvoice error:", e);
 }
@@ -1710,6 +1705,8 @@ async function pullTokens(showLoader = true) {
           total: total.toFixed(2),
           items: h.items.map((i) => ({
             name: i.item_name,
+            id: i.item_id,
+            gst_percent: i.gst_percent,
             qty: parseFloat(i.qty),
             price: parseFloat(i.rate),
             token_no: h.hold.token_no,
