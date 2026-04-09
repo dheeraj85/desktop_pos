@@ -1127,6 +1127,7 @@ function addToCart(id, focusQty = false) {
       qty: 1,
       rate_change_permission: product.rate_change_permission,
       gst_percent: product.gst_percent,
+      is_kot: product.is_kot,
       
     });
   }
@@ -1258,7 +1259,7 @@ async function confirmPayment() {
           price: +item.price || 0,
           // gst_percent: +item.gst_percent || 0,
           total: (+item.qty || 0) * (+item.price || 0),
-        }))
+          is_kot: item.is_kot || null,        }))
       : [],
     total: +total || 0,
     paymentMode: mode,

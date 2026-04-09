@@ -80,7 +80,6 @@ const path = require("path");
 function fmt(n){ return (+n || 0).toFixed(2); }
 function pad(val, len){ return String(val).padStart(len, " "); }
 
-
 /* ===== READ company.json ===== */
 let company = {};
 try {
@@ -96,41 +95,81 @@ ipcRenderer.on("invoice-data", (e, sale) => {
   const tokenNo = sale.id;
   const KotNo = String(sale.id).replace(/[^\d]/g, "");
 
+  let html = "";
 
-  /* ================= KOT ================= */
-  let html = `
-    <div>
-      <div class="center company-title">KOT - ${company.company_name}</div>
-      <div class="small">Date: ${dateStr}</div>
-<div class="small">Token: #${KotNo}</div>
-      <hr>
+  /* ================= KOT LOGIC ================= */
+  const hasKotItems = sale.items.some(i => i.is_kot == 1);
 
-      <table>
-        <tr>
-          <th class="left">Item</th>
-          <th class="right">Qty</th>
-        </tr>
-  `;
+  if (hasKotItems) {
+    // 🔥 MULTIPLE KOT (item-wise)
+    sale.items
+      .filter(i => i.is_kot == 1)
+      .forEach(i => {
 
-  sale.items.forEach(i => {
+        html += `
+          <div>
+            <div class="center company-title">KOT - ${company.company_name}</div>
+            <div class="small">Date: ${dateStr}</div>
+            <div class="small">Token: #${KotNo}</div>
+            <hr>
+
+            <table>
+              <tr>
+                <th class="left">Item</th>
+                <th class="right">Qty</th>
+              </tr>
+
+              <tr>
+                <td class="item">${i.name}</td>
+                <td class="qty">${fmt(i.qty)}</td>
+              </tr>
+            </table>
+
+            <div class="spacer"></div>
+          </div>
+
+          <div class="page-break"></div>
+        `;
+    });
+
+  } else {
+    // 🔥 SINGLE KOT (all items)
     html += `
-      <tr>
-        <td class="item">${i.name}</td>
-        <td class="qty">${fmt(i.qty)}</td>
-      </tr>
+      <div>
+        <div class="center company-title">KOT - ${company.company_name}</div>
+        <div class="small">Date: ${dateStr}</div>
+        <div class="small">Token: #${KotNo}</div>
+        <hr>
+
+        <table>
+          <tr>
+            <th class="left">Item</th>
+            <th class="right">Qty</th>
+          </tr>
     `;
-  });
 
+    sale.items.forEach(i => {
+      html += `
+        <tr>
+          <td class="item">${i.name}</td>
+          <td class="qty">${fmt(i.qty)}</td>
+        </tr>
+      `;
+    });
+
+    html += `
+        </table>
+        <div class="spacer"></div>
+      </div>
+
+      <div class="page-break"></div>
+    `;
+  }
+
+  /* ================= INVOICE ================= */
   html += `
-      </table>
-      <div class="spacer"></div>
-    </div>
-
-    <div class="page-break"></div>
-
-    <!-- ================= INVOICE ================= -->
     <div>
-<div class="center company-title">${company.company_name}</div>
+      <div class="center company-title">${company.company_name}</div>
       <div class="center small">${company.company_address}</div>
       <div class="center small">${company.contact_number}</div>
       <div class="center small">GSTIN: ${company.company_gstin || "N/A"}</div>
@@ -166,7 +205,7 @@ ipcRenderer.on("invoice-data", (e, sale) => {
     gstPercent = gst;
 
     html += `
-       <tr>
+      <tr>
         <td class="item">${i.name}<br>(${gst}%)</td>
         <td class="qty">${pad(fmt(qty), 4)}</td>
         <td class="rate">${pad(fmt(rate), 7)}</td>
@@ -179,10 +218,9 @@ ipcRenderer.on("invoice-data", (e, sale) => {
       </table>
       <hr>
       <div class="right"><b>Total: ₹${fmt(total)}</b></div>
-      <div class="center small">Payment Mode: Cash</div>
+      <div class="center small">Payment Mode: ${sale.paymentMode || 'Cash'}</div>
       <hr>
 
-      <!-- GST SUMMARY -->
       <div class="center small"><b>GST Summary</b></div>
       <div class="small center">
         ${gstPercent}% → ₹${fmt(gstValue)}<br>
