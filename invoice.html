@@ -166,27 +166,55 @@ ipcRenderer.on("invoice-data", (e, sale) => {
     `;
   }
 
-  /* ================= INVOICE ================= */
+ /* ================= INVOICE ================= */
+
+html += `
+<div>
+  <div class="center company-title">${company.company_name}</div>
+  <div class="center small">${company.company_address}</div>
+  <div class="center small">${company.contact_number}</div>
+  <div class="center small">
+    GSTIN: ${company.company_gstin || "N/A"}
+  </div>
+
+  <hr>
+
+  <div class="small">Date: ${dateStr}</div>
+  <div class="small">Invoice: ${tokenNo}</div>
+`;
+
+/* ===== CUSTOMER DETAILS ===== */
+
+if (
+  sale.cust_name ||
+  sale.cust_mobile ||
+  sale.cust_gstin ||
+  sale.cust_address
+) {
   html += `
-    <div>
-      <div class="center company-title">${company.company_name}</div>
-      <div class="center small">${company.company_address}</div>
-      <div class="center small">${company.contact_number}</div>
-      <div class="center small">GSTIN: ${company.company_gstin || "N/A"}</div>
-      <hr>
+    <hr>
 
-      <div class="small">Date: ${dateStr}</div>
-      <div class="small">Invoice: ${tokenNo}</div>
-      <hr>
-
-      <table>
-        <tr>
-          <th class="left"  style="width:33mm">Item</th>
-          <th class="right" style="width:7mm">Qty</th>
-          <th class="right" style="width:12mm">Rate</th>
-          <th class="right" style="width:14mm">Amt</th>
-        </tr>
+    <div class="small">
+      <b>Customer Details</b><br>
+      ${sale.cust_name ? `Name: ${sale.cust_name}<br>` : ""}
+      ${sale.cust_mobile ? `Mobile: ${sale.cust_mobile}<br>` : ""}
+      ${sale.cust_gstin ? `GSTIN: ${sale.cust_gstin}<br>` : ""}
+      ${sale.cust_address ? `Address: ${sale.cust_address}<br>` : ""}
+    </div>
   `;
+}
+
+html += `
+  <hr>
+
+  <table>
+    <tr>
+      <th class="left" style="width:33mm">Item</th>
+      <th class="right" style="width:7mm">Qty</th>
+      <th class="right" style="width:12mm">Rate</th>
+      <th class="right" style="width:14mm">Amt</th>
+    </tr>
+`;
 
   let total = 0;
   let gstPercent = 0;

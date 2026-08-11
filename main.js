@@ -8,18 +8,35 @@ const dataDir = path.join(__dirname, "data");
 let loginWindow;
 let mainWindow;
 
+// Load settings (printer name etc.)
+const settingsPath = path.join(dataDir, "settings.json");
+let settings = {};
+let printerName = "";
+try {
+  if (fs.existsSync(settingsPath)) {
+    settings = JSON.parse(fs.readFileSync(settingsPath, "utf-8"));
+    printerName = settings.printerName || settings.printer || "";
+  }
+} catch (e) {
+  console.error("Failed to load settings:", e);
+}
+
 // ---------------- LOGIN WINDOW ----------------
 function createLoginWindow() {
   loginWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     resizable: false,
+    show: false,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      backgroundThrottling: false,
+      spellcheck: false
     }
   });
   loginWindow.loadFile("login.html");
+  loginWindow.once("ready-to-show", () => loginWindow.show());
 }
 
 // ---------------- MAIN WINDOW ----------------
@@ -27,16 +44,34 @@ function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    show: false,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      backgroundThrottling: false,
+      spellcheck: false
     }
   });
   mainWindow.loadFile("index.html");
+  mainWindow.once("ready-to-show", () => {
+    mainWindow.maximize();
+    mainWindow.show();
+  });
 }
 
-app.whenReady().then(createLoginWindow);
+// app.whenReady().then(createLoginWindow);
 
+const { session } = require("electron");
+
+app.whenReady().then(async () => {
+
+    await session.defaultSession.clearCache();
+
+    await session.defaultSession.clearStorageData();
+
+    createLoginWindow();
+
+});
 // ---------------- LOGIN HANDLER ----------------
 ipcMain.handle("check-login", (event, { user, pass }) => {
   if (user === "admin" && pass === "1234") {
@@ -168,7 +203,7 @@ ipcMain.handle("print-invoice", async (event, saleData) => {
           {
             silent: true,
             printBackground: true,
-            deviceName: "POS-80",
+            deviceName: printerName || "",
             margins: { marginType: "none" }
           },
           (success, errorType) => {
@@ -178,7 +213,7 @@ ipcMain.handle("print-invoice", async (event, saleData) => {
             else reject(errorType);
           }
         );
-      }, 300);
+      }, 150);
     });
   });
 });
@@ -208,7 +243,7 @@ ipcMain.handle("print-invoice-only", async (event, saleData) => {
           {
             silent: true,
             printBackground: true,
-            deviceName: "POS-80",
+            deviceName: printerName || "",
             margins: { marginType: "none" }
           },
           (success, errorType) => {
@@ -218,7 +253,7 @@ ipcMain.handle("print-invoice-only", async (event, saleData) => {
             else reject(errorType);
           }
         );
-      }, 300);
+      }, 150);
     });
   });
 });

@@ -38,7 +38,26 @@ const ItemPage = {
   companyFile: path.join(dataDir,"company.json"),
   paymentFile: path.join(dataDir,"paymentModes.json"),
 
-  config: fs.existsSync(path.join(dataDir,"config.json")) ? JSON.parse(fs.readFileSync(path.join(dataDir,"config.json"),"utf-8")) : {},
+  // config: fs.existsSync(path.join(dataDir,"config.json")) ? JSON.parse(fs.readFileSync(path.join(dataDir,"config.json"),"utf-8")) : {},
+  
+config: (() => {
+    try {
+        const file = path.join(dataDir, "config.json");
+
+        if (!fs.existsSync(file)) return {};
+
+        const txt = fs.readFileSync(file, "utf8").trim();
+
+        if (!txt) return {};
+
+        return JSON.parse(txt);
+
+    } catch (err) {
+        console.error("Invalid config.json:", err);
+        return {};
+    }
+})(),
+
   products: [],
   categories: [],
   company: [],
@@ -680,6 +699,8 @@ function setButtonLoading(btn, loading) {
     text?.classList.remove("d-none");
   }
 }
+
+
 // function handleSearchKey(e) {
 //   if (e.key === "Enter") {
 //     e.preventDefault();
@@ -692,19 +713,60 @@ function setButtonLoading(btn, loading) {
 //       const product = products.find(p => p.item_code.toLowerCase() === itemcode);
 //       if (product) {
 //         addToCart(product.id);
+
+//         // Wait a moment for cart to render, then focus qty box
+//         setTimeout(() => {
+//           const rows = document.querySelectorAll("#cart-items tr");
+//           if (rows.length > 0) {
+//             const lastRow = rows[rows.length - 1];
+//             const qtyInput = lastRow.querySelector("input[type='number']");
+//             if (qtyInput) {
+//               qtyInput.focus();
+//               qtyInput.select();
+
+//               // When pressing Enter again in qty box → go back to itemcode input
+//               qtyInput.addEventListener("keydown", function qtyEnterHandler(ev) {
+//                 if (ev.key === "Enter") {
+//                   ev.preventDefault();
+//                   itemInput.focus();
+//                   qtyInput.removeEventListener("keydown", qtyEnterHandler);
+//                 }
+//               });
+//             }
+//           }
+//         }, 120);
 //       } else {
 //         showToast(`❌ No product found with item code: ${itemcode}`);
 //       }
 
 //       itemInput.value = "";
-//       itemInput.focus();
-//       return; 
+//       return;
 //     }
 
 //     if (search !== "") {
 //       const product = products.find(p => p.name.toLowerCase().includes(search));
 //       if (product) {
 //         addToCart(product.id);
+
+//         // Same logic for name search
+//         setTimeout(() => {
+//           const rows = document.querySelectorAll("#cart-items tr");
+//           if (rows.length > 0) {
+//             const lastRow = rows[rows.length - 1];
+//             const qtyInput = lastRow.querySelector("input[type='number']");
+//             if (qtyInput) {
+//               qtyInput.focus();
+//               qtyInput.select();
+//               qtyInput.addEventListener("keydown", function qtyEnterHandler(ev) {
+//                 if (ev.key === "Enter") {
+//                   ev.preventDefault();
+//                   itemInput.focus();
+//                   qtyInput.removeEventListener("keydown", qtyEnterHandler);
+//                 }
+//               });
+//             }
+//           }
+//         }, 120);
 //       } else {
 //         showToast(`❌ No product found with name: ${search}`);
 //       }
@@ -714,6 +776,8 @@ function setButtonLoading(btn, loading) {
 //   }
 // }
 
+
+
 function handleSearchKey(e) {
   if (e.key === "Enter") {
     e.preventDefault();
@@ -722,39 +786,79 @@ function handleSearchKey(e) {
     const itemInput = document.getElementById("search-itemcode");
     const itemcode = itemInput.value.toLowerCase().trim();
 
-    if (itemcode !== "") {
-      const product = products.find(p => p.item_code.toLowerCase() === itemcode);
-      if (product) {
+    // if (itemcode !== "") {
+    //   const product = products.find(p => p.item_code.toLowerCase() === itemcode);
+    //   if (product) {
+    //     addToCart(product.id);
+
+    //     // Wait a moment for cart to render, then focus qty box
+    //     setTimeout(() => {
+    //       const rows = document.querySelectorAll("#cart-items tr");
+    //       if (rows.length > 0) {
+    //         const lastRow = rows[rows.length - 1];
+    //         const qtyInput = lastRow.querySelector("input[type='number']");
+    //         if (qtyInput) {
+    //           qtyInput.focus();
+    //           qtyInput.select();
+
+    //           // When pressing Enter again in qty box → go back to itemcode input
+    //           qtyInput.addEventListener("keydown", function qtyEnterHandler(ev) {
+    //             if (ev.key === "Enter") {
+    //               ev.preventDefault();
+    //               itemInput.focus();
+    //               qtyInput.removeEventListener("keydown", qtyEnterHandler);
+    //             }
+    //           });
+    //         }
+    //       }
+    //     }, 120);
+    //   } else {
+    //     showToast(`❌ No product found with item code: ${itemcode}`);
+    //   }
+
+    //   itemInput.value = "";
+    //   return;
+    // }
+
+if (itemcode !== "") {
+
+    const product = products.find(p =>
+        (p.item_code && p.item_code.toString().toLowerCase() === itemcode) ||
+        (p.barcode && p.barcode.toString().toLowerCase() === itemcode)
+    );
+
+    if (product) {
         addToCart(product.id);
 
-        // Wait a moment for cart to render, then focus qty box
         setTimeout(() => {
-          const rows = document.querySelectorAll("#cart-items tr");
-          if (rows.length > 0) {
-            const lastRow = rows[rows.length - 1];
-            const qtyInput = lastRow.querySelector("input[type='number']");
-            if (qtyInput) {
-              qtyInput.focus();
-              qtyInput.select();
+            const rows = document.querySelectorAll("#cart-items tr");
+            if (rows.length > 0) {
+                const lastRow = rows[rows.length - 1];
+                const qtyInput = lastRow.querySelector("input[type='number']");
 
-              // When pressing Enter again in qty box → go back to itemcode input
-              qtyInput.addEventListener("keydown", function qtyEnterHandler(ev) {
-                if (ev.key === "Enter") {
-                  ev.preventDefault();
-                  itemInput.focus();
-                  qtyInput.removeEventListener("keydown", qtyEnterHandler);
+                if (qtyInput) {
+                    qtyInput.focus();
+                    qtyInput.select();
+
+                    qtyInput.addEventListener("keydown", function qtyEnterHandler(ev) {
+                        if (ev.key === "Enter") {
+                            ev.preventDefault();
+                            itemInput.focus();
+                            qtyInput.removeEventListener("keydown", qtyEnterHandler);
+                        }
+                    });
                 }
-              });
             }
-          }
         }, 120);
-      } else {
-        showToast(`❌ No product found with item code: ${itemcode}`);
-      }
 
-      itemInput.value = "";
-      return;
+    } else {
+        showToast(`❌ No product found with Item Code / Barcode: ${itemcode}`);
     }
+
+    itemInput.value = "";
+    return;
+}
+
 
     if (search !== "") {
       const product = products.find(p => p.name.toLowerCase().includes(search));
@@ -788,7 +892,6 @@ function handleSearchKey(e) {
     itemInput.focus();
   }
 }
-
 
 // Helper to focus qty of a specific row index
 function focusQtyRow(rowIndex) {
@@ -1882,6 +1985,12 @@ function loadTokenToCart(tokenId) {
     }
     // Ctrl+Shift+P => Print with KOT
     if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'p') {
+      e.preventDefault();
+      handlePrintWithKot();
+      return;
+    }
+    // F6 => Print with KOT (single-key shortcut)
+    if (e.key === 'F6') {
       e.preventDefault();
       handlePrintWithKot();
       return;
